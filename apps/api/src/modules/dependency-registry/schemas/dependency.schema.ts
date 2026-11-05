@@ -27,6 +27,8 @@ export const ResourceTypeSchema = Type.Union([
   Type.Literal("storage"),
   Type.Literal("service"),
   Type.Literal("workflow"),
+  Type.Literal("mcp_server"),
+  Type.Literal("queue"),
   Type.Literal("other"),
 ]);
 const ChangeTypeSchema = Type.Union([
@@ -160,6 +162,27 @@ const VersionResponse = Type.Object({
   createdAt: Type.String(),
 });
 
+const EvidenceResponse = Type.Object({
+  id: Uuid,
+  dependencyId: Uuid,
+  sourceType: Type.Union([
+    Type.Literal("manual"),
+    Type.Literal("agent_configuration"),
+    Type.Literal("workflow_definition"),
+    Type.Literal("permission_configuration"),
+    Type.Literal("runtime_event"),
+    Type.Literal("external_integration"),
+  ]),
+  sourceReference: Type.Union([Type.String(), Type.Null()]),
+  discoveryRunId: Type.Union([Uuid, Type.Null()]),
+  evidenceKind: Type.Union([Type.Literal("declared"), Type.Literal("configured"), Type.Literal("observed")]),
+  evidenceReference: Type.Union([Type.String(), Type.Null()]),
+  sourceVersion: Type.Union([Type.String(), Type.Null()]),
+  confidence: Type.Number(),
+  observedAt: Type.String(),
+  createdAt: Type.String(),
+});
+
 const Pagination = Type.Object({ page: Type.Integer(), limit: Type.Integer(), total: Type.Integer(), totalPages: Type.Integer() });
 
 export const dependencyResponses = {
@@ -167,6 +190,7 @@ export const dependencyResponses = {
   created: { 201: Type.Object({ data: DependencyResponse }) },
   list: { 200: Type.Object({ data: Type.Array(DependencyResponse), pagination: Pagination }) },
   versions: { 200: Type.Object({ data: Type.Array(VersionResponse), pagination: Pagination }) },
+  evidence: { 200: Type.Object({ data: Type.Array(EvidenceResponse), pagination: Pagination }) },
 };
 
 // ---------- resources (minimum model)
@@ -176,6 +200,8 @@ export const CreateResourceBody = Type.Object(
     name: Type.String({ minLength: 1, maxLength: 120, ...NonBlank }),
     resourceType: ResourceTypeSchema,
     description: Type.Optional(Type.String({ maxLength: 2000 })),
+    externalReference: Type.Optional(Type.String({ minLength: 1, maxLength: 255, pattern: "^[A-Za-z0-9][A-Za-z0-9._:/@-]*$" })),
+    metadata: Type.Optional(Metadata),
   },
   { additionalProperties: false },
 );
@@ -188,6 +214,8 @@ const ResourceResponse = Type.Object({
   name: Type.String(),
   resourceType: ResourceTypeSchema,
   description: Type.Union([Type.String(), Type.Null()]),
+  externalReference: Type.Union([Type.String(), Type.Null()]),
+  metadata: Metadata,
   createdAt: Type.String(),
   updatedAt: Type.String(),
 });

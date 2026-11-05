@@ -51,7 +51,7 @@ Controllers are thin, services own business rules and transactions, the reposito
 
 ## 4. Domain model
 
-- **Agent**: `id` (uuid, server-generated), `organizationId`, `name` (1–120, unique per org, case-insensitive), `description`, `agentType` (`llm | workflow | service | wallet | other`), `status`, `metadata` (JSON object), `createdAt`, `updatedAt`.
+- **Agent**: `id` (uuid, server-generated), `organizationId`, `name` (1–120, unique per org, case-insensitive), `description`, `agentType` (`llm | workflow | service | wallet | other`), `status`, `runtimeType?`, `ownerReference?`, `externalReference?` (unique per org, case-insensitive; the stable key Dependency Discovery resolves against), `metadata` (JSON object), `createdAt`, `updatedAt`.
 - **Capability**: dotted lowercase string, e.g. `customer.read`. Max 100 per agent. Normalised (trim, lowercase), deduplicated, sorted.
 - **Identity**: `identityType` (`ens | evm_address | did | api_client | other`), `identityValue`, `chainId?`, `verificationStatus` (`unverified | pending | verified | failed`), `verifiedAt?`. Max 20 per agent. Unique per org on (type, lower(value), chain).
 - **Status history entry** and **audit log entry**: append-only (section 5).
@@ -182,3 +182,9 @@ Dev auth headers: `x-dev-actor-id` (uuid), `x-dev-org-id` (uuid), `x-dev-role` (
 - **Authorization Gateway** will consult status (`suspended`/`compromised` ⇒ deny); capabilities remain advisory input.
 - **ENS adapter** will call `recordVerification`.
 - **Evidence Service** will hash audit/history rows.
+
+## Addendum: references and the reader (for Dependency Discovery)
+
+- `externalReference`, `ownerReference` and `runtimeType` are optional, set at registration or with PATCH (null clears them), included in audit snapshots, and unique-checked (`409 AGENT_EXTERNAL_REF_CONFLICT`). `externalReference` must match `^[A-Za-z0-9][A-Za-z0-9._:/@-]*$`.
+- `AgentRegistryReader` (`modules/agent-registry/readers`) is an internal, read-only, organization-explicit interface for other modules: `getAgent`, `listAgents`, `findAgentByExternalReference`, `getCapabilities` and `validateAgentReference`. It takes an `organizationId`, not a principal, so callers must get that id from their own authenticated context.
+- Registering a reference does not prove an agent is what the reference claims.

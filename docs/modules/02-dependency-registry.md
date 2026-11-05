@@ -8,7 +8,7 @@ The Dependency Registry stores validated, versioned relationships between agents
 
 **Implemented here:** dependency CRUD (soft removal), three typed relationship kinds, relationship validation, authority-cycle prevention, provenance/confidence/freshness, per-change version history, append-only audit, and a *minimum* resource model.
 
-**Not implemented (future modules):** Dependency Discovery, Graph Engine, graph snapshots, blast-radius analysis, containment, resource management beyond create/read.
+**Not implemented (future modules):** Dependency Discovery itself (its prerequisites are in section 16), Graph Engine, graph snapshots, blast-radius analysis, containment, resource management beyond create/read.
 
 ## 2. Responsibilities
 
@@ -36,7 +36,7 @@ An operational dependency **never implies authority**: the types are separate va
 - **Self-reference is rejected for every type** (422 `SELF_REFERENCE`, also a DB CHECK).
 - Per-type required metadata (MVP rules):
   - `authority`: `metadata.scope`, a dotted lowercase string such as `payment.execute`.
-  - `resource`: `metadata.accessLevel` ∈ `read | write | admin`.
+  - `resource`: `metadata.accessLevel` ∈ `read | write | admin | unknown` (`unknown` is for discovered access whose level the source does not state).
   - `operational`: none.
 - Agent status is not a precondition: a `compromised` or `suspended` agent can still be mapped, because that is exactly when dependencies matter.
 
@@ -50,7 +50,7 @@ An operational dependency **never implies authority**: the types are separate va
 - **Immutable after creation:** `sourceType`, `sourceId`, `targetType`, `targetId`, `dependencyType`, `organizationId`. To change them, remove the relationship and create a new one.
 - **metadata** reuses the Agent Registry guard: JSON object, ≤ 8 KB, depth ≤ 5, secret-looking key names rejected (best effort, key names only).
 
-`Resource` (minimum model): `id`, `organizationId`, `name` (unique per org, case-insensitive), `resourceType` (`api | database | wallet | credential | storage | service | workflow | other`), `description`, timestamps. A `credential` resource is a *reference* to something that exists elsewhere; never store the secret.
+`Resource` (minimum model): `id`, `organizationId`, `name` (unique per org, case-insensitive), `resourceType` (`api | database | wallet | credential | storage | service | workflow | mcp_server | queue | other`), `description`, `externalReference` (optional, unique per org, case-insensitive), `metadata`, timestamps. A `credential` resource is a *reference* to something that exists elsewhere; never store the secret.
 
 ## 6. Database schema
 
@@ -63,7 +63,7 @@ Migrations `0002_dependency_registry` and `0003_dependency_append_only` (hand-wr
 | `dependency_versions` | one immutable row per version: `(dependency_id, version)` unique, `change_type`, `changed_by`, full `state` JSON |
 | `dependency_audit_logs` | one immutable row per event with `before_state` / `after_state` |
 
-`agents` gained a `UNIQUE (id, organization_id)` constraint so other tables can reference it (this is the only change to Module 1's schema).
+`agents` gained a `UNIQUE (id, organization_id)` constraint so other tables can reference it. Later amendments to Module 1's schema are listed in section 16.
 
 Indexes on `dependencies`: `(org, source_type, source_agent_id, source_resource_id)`, `(org, target_type, target_agent_id, target_resource_id)`, `(org, dependency_type, status)`, `(org, created_at, id)`, plus the unique pair index.
 
@@ -183,3 +183,55 @@ Same envelope and safe-error rules as Module 1: `AppError` subclasses carry clie
 - `incidentId`-style links to incidents do not exist yet.
 - Down migrations are manual scripts.
 - No rate limiting.
+
+## 16. Amendments for Dependency Discovery (Stage A)
+
+These changes make the registry safe for an automated writer. Discovery itself (sources, adapters, runs, observations, reconciliation) is **not** implemented.
+
+### Evidence is separate from the dependency row
+
+`dependency_evidence` is an append-only table (migration 0004/0005) holding every observation that supports a dependency: `sourceType` (`manual | agent_configuration | workflow_definition | permission_configuration | runtime_event | external_integration`), `sourceReference`, `discoveryRunId`, `evidenceKind` (`declared | configured | observed`), `evidenceReference`, `sourceVersion`, `confidence`, `observedAt`. Composite FK to `(dependency_id, organization_id)`; triggers reject UPDATE/DELETE/TRUNCATE; a partial unique index on `(dependency_id, discovery_run_id, source_type, source_reference)` makes a retried run unable to duplicate evidence. `discovery_run_id` has no FK until the discovery tables exist. `GET /api/v1/dependencies/:id/evidence` lists it (read-only).
+
+The `dependencies.provenance` column keeps a single summary of the first accepted source. The full evidence history is the evidence table. This is a deliberate divergence from "provenance as an array on the row": a fresh observation of an unchanged relationship must not create a version.
+
+### Internal writer: `DependencyRegistryWriter`
+
+Not exposed over HTTP. Acts as the internal discovery principal (`role: "system"`, fixed actor id `00000000-0000-4000-8000-00000000d15c`). The `system` role can read the inventory and write dependencies only; it cannot write agents or resources, and `x-dev-role: system` is rejected by the HTTP authenticator.
+
+- `createOrUpdate(input)` returns `{ outcome: created | updated | unchanged | rejected, dependencyId?, version?, reasonCode?, reason?, evidenceAdded }`. Domain-rule violations are returned as `rejected` with a stable code (`ENDPOINT_NOT_FOUND`, `RELATIONSHIP_TYPE_MISMATCH`, `SELF_REFERENCE`, `AUTHORITY_CYCLE`, `MISSING_REQUIRED_METADATA`, `EVIDENCE_REQUIRED`, `INVALID_CONFIDENCE`, `INVALID_FRESHNESS`, ...); unexpected failures throw.
+- **Matching key:** organization + source + target + `dependencyType`. `relationship` is an attribute: a different label is an update, not a new row.
+- **Idempotent:** repeating a call, including concurrently, yields one dependency; the first writer gets `created`, the rest `unchanged`; evidence is never duplicated for the same run/source.
+- **`unchanged`** means the stored relationship did not change. New evidence is still appended, and `last_verified_at` moves forward (never backward) **without a version**; the observation itself is preserved in the evidence table.
+- **`updated`** (versioned, audited) happens when the relationship label differs, supplied `metadata` differs, or the strongest evidence confidence rises. Dependency `confidence` is the **highest** confidence among its evidence; weaker later evidence never lowers it.
+- **Inactive dependencies are not resurrected.** A new observation of an inactive dependency is stored as evidence and returned as `rejected` with `INACTIVE_REQUIRES_REVIEW`.
+- **Authority edges** may be created by the writer only when at least one evidence item is `manual` or `permission_configuration`, or `approvedByReview` is true. Configuration, workflow, runtime and integration evidence alone are rejected with `AUTHORITY_REQUIRES_EXPLICIT_SOURCE`: sequence or tool use does not prove delegation. They can still create `operational` and `resource` edges.
+- **Resource access** without a stated level is stored as `accessLevel: "unknown"`.
+- `deactivate(org, id, reason)` is a soft removal (`removed` event) with the reason stored in the audit row; a reason is required.
+- `findMatching(org, key)` returns the matching dependency (any status) or null.
+- Everything runs in one transaction; a failed evidence write rolls back the creation (tested).
+
+### Read interface for the future Graph Engine: `DependencyGraphDataProvider`
+
+`listActiveDependencies(org, { observedAfter?, dependencyTypes? })` and `getDependency(org, id)`. Active dependencies only, organization-explicit, read-only. `observedAfter` filters on freshness, the later of `observed_at` and `last_verified_at`; edges with neither are excluded when the filter is used. Evidence is read separately. No graph traversal exists here.
+
+### Changes to Module 1 and resources
+
+- Agents gained optional `externalReference` (unique per org, case-insensitive; the key discovery resolves names against), `ownerReference` and `runtimeType`. `AgentRegistryReader` (internal, organization-explicit) provides `getAgent`, `listAgents`, `findAgentByExternalReference`, `getCapabilities` (declared names only) and `validateAgentReference`.
+- Resources gained optional `externalReference` (unique per org) and `metadata`, and the types `mcp_server` and `queue`.
+
+### Where this differs from the architecture document
+
+| Architecture doc | Implemented |
+|---|---|
+| `provenance: DependencyProvenance[]` on the dependency | Single summary on the row plus the append-only evidence table |
+| Writer takes one top-level `confidence` | Each evidence item has its own confidence; the dependency keeps the highest |
+| `findMatching` key includes `relationship` | Key is source + target + type; relationship is an attribute |
+| Agent identity types `wallet`, `service_account`, `external_id`; statuses `mismatch`, `unavailable` | Module 1's `evm_address`, `did`, `api_client`, `other`; `pending`, `failed` kept |
+| Capability rows with `source` and `verified` | Plain declared capability names |
+| `getCapabilities` returns capability objects | Returns names |
+
+### Additional limitations
+
+- Observed-again inactive dependencies can only be reactivated by a human (PATCH `status: active`).
+- `last_verified_at` can run ahead of the latest version snapshot's value, because freshness updates are deliberately not versioned.
+- `listAgents` in the reader pages internally but is unbounded; it is meant for resolution caches in background jobs.

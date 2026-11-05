@@ -13,6 +13,7 @@ import type {
   ChangeType,
   Dependency,
   DependencyAuditAction,
+  DependencyEvidence,
   DependencyStatus,
   DependencyVersion,
   Provenance,
@@ -110,6 +111,15 @@ export class DependencyService {
     });
   }
 
+  async listEvidence(principal: Principal, id: string, page: { limit: number; offset: number }): Promise<{ items: DependencyEvidence[]; total: number }> {
+    assertCan(principal, "dependency:read");
+    const org = principal.organizationId;
+    return this.db.transaction(async (tx) => {
+      if (!(await this.deps.find(tx, org, id))) throw new NotFoundError("Dependency not found");
+      return this.deps.listEvidence(tx, org, id, page);
+    });
+  }
+
   /**
    * Source, target and dependencyType are immutable. A no-op update (nothing
    * actually differs) returns the current record and does NOT create a version.
@@ -174,7 +184,7 @@ export class DependencyService {
    * history are kept; status becomes `inactive` and the event is recorded as
    * `removed`. It can be restored with PATCH status=active (recorded as `activated`).
    */
-  async remove(principal: Principal, id: string, expectedVersion?: number): Promise<Dependency> {
+  async remove(principal: Principal, id: string, expectedVersion?: number, reason?: string): Promise<Dependency> {
     assertCan(principal, "dependency:write");
     const org = principal.organizationId;
     return this.db.transaction(async (tx) => {
@@ -187,7 +197,7 @@ export class DependencyService {
 
       const removed = await this.deps.update(tx, org, id, { status: "inactive" });
       await this.versions.record(tx, removed, "removed", principal.actorId);
-      await this.audit.record(tx, "dependency.removed", principal.actorId, current, removed);
+      await this.audit.record(tx, "dependency.removed", principal.actorId, current, removed, reason);
       return removed;
     });
   }

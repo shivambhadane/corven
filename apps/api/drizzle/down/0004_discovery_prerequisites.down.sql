@@ -1,0 +1,10 @@
+DROP TABLE IF EXISTS dependency_evidence;
+DROP INDEX IF EXISTS resources_org_external_ref_unique;
+DROP INDEX IF EXISTS agents_org_external_ref_unique;
+ALTER TABLE resources DROP CONSTRAINT IF EXISTS resources_type_check;
+ALTER TABLE resources ADD CONSTRAINT resources_type_check CHECK (resource_type in ('api','database','wallet','credential','storage','service','workflow','other'));
+ALTER TABLE resources DROP COLUMN IF EXISTS metadata;
+ALTER TABLE resources DROP COLUMN IF EXISTS external_reference;
+ALTER TABLE agents DROP COLUMN IF EXISTS external_reference;
+ALTER TABLE agents DROP COLUMN IF EXISTS owner_reference;
+ALTER TABLE agents DROP COLUMN IF EXISTS runtime_type;

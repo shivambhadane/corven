@@ -27,6 +27,10 @@ export interface Agent {
   description: string | null;
   agentType: AgentType;
   status: AgentStatus;
+  runtimeType: string | null;
+  ownerReference: string | null;
+  /** Stable external key used for entity resolution (unique per organization, case-insensitive). */
+  externalReference: string | null;
   metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;

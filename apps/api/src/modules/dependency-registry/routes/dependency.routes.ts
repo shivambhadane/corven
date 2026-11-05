@@ -1,5 +1,5 @@
 import type { FastifyPluginAsyncTypebox } from "@fastify/type-provider-typebox";
-import { pageInfo, toDependencyDto, toVersionDto } from "../controllers/dependency.controller.js";
+import { pageInfo, toDependencyDto, toEvidenceDto, toVersionDto } from "../controllers/dependency.controller.js";
 import {
   AgentDependenciesQuery,
   AgentParams,
@@ -44,6 +44,12 @@ export const dependencyRoutes: FastifyPluginAsyncTypebox<{ dependencies: Depende
     const { page = 1, limit = 20 } = req.query;
     const { items, total } = await dependencies.listVersions(req.principal, req.params.dependencyId, { limit, offset: offsetOf(page, limit) });
     return { data: items.map(toVersionDto), pagination: pageInfo(page, limit, total) };
+  });
+
+  app.get("/:dependencyId/evidence", { schema: { params: DependencyParams, querystring: VersionsQuery, response: dependencyResponses.evidence } }, async (req) => {
+    const { page = 1, limit = 20 } = req.query;
+    const { items, total } = await dependencies.listEvidence(req.principal, req.params.dependencyId, { limit, offset: offsetOf(page, limit) });
+    return { data: items.map(toEvidenceDto), pagination: pageInfo(page, limit, total) };
   });
 };
 

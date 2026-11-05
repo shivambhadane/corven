@@ -13,6 +13,7 @@ export class DependencyAuditService {
     actorId: string | null,
     before: Dependency | null,
     after: Dependency,
+    reason?: string,
   ): Promise<void> {
     await this.repo.insertAudit(tx, {
       organizationId: after.organizationId,
@@ -20,7 +21,7 @@ export class DependencyAuditService {
       actorId,
       action,
       beforeState: before ? dependencySnapshot(before) : null,
-      afterState: dependencySnapshot(after),
+      afterState: reason ? { ...dependencySnapshot(after), reason } : dependencySnapshot(after),
     });
   }
 }

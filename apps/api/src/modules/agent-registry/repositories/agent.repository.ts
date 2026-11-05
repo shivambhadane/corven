@@ -39,6 +39,9 @@ const toAgent = (r: typeof agents.$inferSelect): Agent => ({
   description: r.description,
   agentType: r.agentType as AgentType,
   status: r.status as AgentStatus,
+  runtimeType: r.runtimeType,
+  ownerReference: r.ownerReference,
+  externalReference: r.externalReference,
   metadata: r.metadata,
   createdAt: r.createdAt,
   updatedAt: r.updatedAt,
@@ -61,7 +64,17 @@ const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 export class AgentRepository {
   async insertAgent(
     tx: Executor,
-    v: { organizationId: string; name: string; description: string | null; agentType: AgentType; status: AgentStatus; metadata: Record<string, unknown> },
+    v: {
+      organizationId: string;
+      name: string;
+      description: string | null;
+      agentType: AgentType;
+      status: AgentStatus;
+      runtimeType?: string | null;
+      ownerReference?: string | null;
+      externalReference?: string | null;
+      metadata: Record<string, unknown>;
+    },
   ): Promise<Agent> {
     const [row] = await tx.insert(agents).values(v).returning();
     return toAgent(row!);
@@ -73,6 +86,14 @@ export class AgentRepository {
       .from(agents)
       .where(and(eq(agents.organizationId, organizationId), eq(agents.id, id)));
     const rows = await (opts.forUpdate ? q.for("update") : q);
+    return rows[0] ? toAgent(rows[0]) : null;
+  }
+
+  async findByExternalReference(tx: Executor, organizationId: string, externalReference: string): Promise<Agent | null> {
+    const rows = await tx
+      .select()
+      .from(agents)
+      .where(and(eq(agents.organizationId, organizationId), sql`lower(${agents.externalReference}) = lower(${externalReference})`));
     return rows[0] ? toAgent(rows[0]) : null;
   }
 
@@ -93,7 +114,16 @@ export class AgentRepository {
     tx: Executor,
     organizationId: string,
     id: string,
-    patch: Partial<{ name: string; description: string | null; agentType: AgentType; metadata: Record<string, unknown>; status: AgentStatus }>,
+    patch: Partial<{
+      name: string;
+      description: string | null;
+      agentType: AgentType;
+      runtimeType: string | null;
+      ownerReference: string | null;
+      externalReference: string | null;
+      metadata: Record<string, unknown>;
+      status: AgentStatus;
+    }>,
   ): Promise<Agent> {
     const [row] = await tx
       .update(agents)

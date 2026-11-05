@@ -37,11 +37,18 @@ export const agents = pgTable(
     description: text("description"),
     agentType: varchar("agent_type", { length: 32 }).notNull(),
     status: varchar("status", { length: 32 }).notNull().default("active"),
+    runtimeType: varchar("runtime_type", { length: 64 }),
+    ownerReference: varchar("owner_reference", { length: 255 }),
+    /** Stable external key (e.g. "support-agent") used by Dependency Discovery for entity resolution. */
+    externalReference: varchar("external_reference", { length: 255 }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    uniqueIndex("agents_org_external_ref_unique")
+      .on(t.organizationId, sql`lower(${t.externalReference})`)
+      .where(sql`${t.externalReference} is not null`),
     // Lets child tables reference (id, organization_id) so the database itself
     // guarantees a referenced agent belongs to the same organization.
     unique("agents_id_org_unique").on(t.id, t.organizationId),
@@ -168,16 +175,21 @@ export const resources = pgTable(
     name: varchar("name", { length: 120 }).notNull(),
     resourceType: varchar("resource_type", { length: 32 }).notNull(),
     description: text("description"),
+    externalReference: varchar("external_reference", { length: 255 }),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    uniqueIndex("resources_org_external_ref_unique")
+      .on(t.organizationId, sql`lower(${t.externalReference})`)
+      .where(sql`${t.externalReference} is not null`),
     unique("resources_id_org_unique").on(t.id, t.organizationId),
     uniqueIndex("resources_org_name_unique").on(t.organizationId, sql`lower(${t.name})`),
     index("resources_org_created_idx").on(t.organizationId, t.createdAt, t.id),
     check(
       "resources_type_check",
-      sql`${t.resourceType} in ('api','database','wallet','credential','storage','service','workflow','other')`,
+      sql`${t.resourceType} in ('api','database','wallet','credential','storage','service','workflow','mcp_server','queue','other')`,
     ),
     check("resources_name_not_blank", sql`length(btrim(${t.name})) > 0`),
   ],
@@ -302,5 +314,44 @@ export const dependencyAuditLogs = pgTable(
   (t) => [
     foreignKey({ columns: [t.dependencyId, t.organizationId], foreignColumns: [dependencies.id, dependencies.organizationId], name: "dependency_audit_logs_dependency_fk" }).onDelete("restrict"),
     index("dependency_audit_logs_dep_idx").on(t.organizationId, t.dependencyId, t.createdAt),
+  ],
+);
+
+/**
+ * Append-only evidence supporting a dependency. A dependency row summarises the
+ * current accepted state; every observation that supports it is kept here, so
+ * fresh observations never need to bump the dependency version.
+ * `discovery_run_id` has no foreign key yet (the discovery tables arrive in a
+ * later stage).
+ */
+export const dependencyEvidence = pgTable(
+  "dependency_evidence",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    dependencyId: uuid("dependency_id").notNull(),
+    sourceType: varchar("source_type", { length: 32 }).notNull(),
+    sourceReference: varchar("source_reference", { length: 500 }),
+    discoveryRunId: uuid("discovery_run_id"),
+    evidenceKind: varchar("evidence_kind", { length: 16 }).notNull(),
+    evidenceReference: varchar("evidence_reference", { length: 500 }),
+    sourceVersion: varchar("source_version", { length: 100 }),
+    confidence: doublePrecision("confidence").notNull(),
+    observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ columns: [t.dependencyId, t.organizationId], foreignColumns: [dependencies.id, dependencies.organizationId], name: "dependency_evidence_dependency_fk" }).onDelete("restrict"),
+    index("dependency_evidence_dep_idx").on(t.organizationId, t.dependencyId, t.observedAt),
+    // A retried run must not duplicate evidence.
+    uniqueIndex("dependency_evidence_run_unique")
+      .on(t.dependencyId, t.discoveryRunId, t.sourceType, sql`coalesce(${t.sourceReference}, '')`)
+      .where(sql`${t.discoveryRunId} is not null`),
+    check(
+      "dependency_evidence_source_check",
+      sql`${t.sourceType} in ('manual','agent_configuration','workflow_definition','permission_configuration','runtime_event','external_integration')`,
+    ),
+    check("dependency_evidence_kind_check", sql`${t.evidenceKind} in ('declared','configured','observed')`),
+    check("dependency_evidence_confidence_check", sql`${t.confidence} >= 0 and ${t.confidence} <= 1`),
   ],
 );

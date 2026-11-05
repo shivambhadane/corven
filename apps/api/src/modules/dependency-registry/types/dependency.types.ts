@@ -15,10 +15,11 @@ export type DependencyStatus = (typeof DEPENDENCY_STATUSES)[number];
 export const PROVENANCE_SOURCES = ["manual", "imported", "discovered", "inferred"] as const;
 export type ProvenanceSource = (typeof PROVENANCE_SOURCES)[number];
 
-export const ACCESS_LEVELS = ["read", "write", "admin"] as const;
+/** "unknown" is for discovered resource access whose level the source does not state. */
+export const ACCESS_LEVELS = ["read", "write", "admin", "unknown"] as const;
 export type AccessLevel = (typeof ACCESS_LEVELS)[number];
 
-export const RESOURCE_TYPES = ["api", "database", "wallet", "credential", "storage", "service", "workflow", "other"] as const;
+export const RESOURCE_TYPES = ["api", "database", "wallet", "credential", "storage", "service", "workflow", "mcp_server", "queue", "other"] as const;
 export type ResourceType = (typeof RESOURCE_TYPES)[number];
 
 export const CHANGE_TYPES = ["created", "updated", "activated", "deactivated", "removed"] as const;
@@ -94,6 +95,50 @@ export interface Resource {
   name: string;
   resourceType: ResourceType;
   description: string | null;
+  /** Stable external key used for entity resolution (unique per organization, case-insensitive). */
+  externalReference: string | null;
+  metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export const EVIDENCE_SOURCE_TYPES = [
+  "manual",
+  "agent_configuration",
+  "workflow_definition",
+  "permission_configuration",
+  "runtime_event",
+  "external_integration",
+] as const;
+export type EvidenceSourceType = (typeof EVIDENCE_SOURCE_TYPES)[number];
+
+/** declared: stated by a document; configured: set up in a system; observed: seen happening. */
+export const EVIDENCE_KINDS = ["declared", "configured", "observed"] as const;
+export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];
+
+/** One observation supporting a dependency. Append-only; never edited or removed. */
+export interface DependencyEvidence {
+  id: string;
+  organizationId: string;
+  dependencyId: string;
+  sourceType: EvidenceSourceType;
+  sourceReference: string | null;
+  discoveryRunId: string | null;
+  evidenceKind: EvidenceKind;
+  evidenceReference: string | null;
+  sourceVersion: string | null;
+  confidence: number;
+  observedAt: Date;
+  createdAt: Date;
+}
+
+export interface EvidenceInput {
+  sourceType: EvidenceSourceType;
+  sourceReference?: string | undefined;
+  discoveryRunId?: string | undefined;
+  evidenceKind: EvidenceKind;
+  evidenceReference?: string | undefined;
+  sourceVersion?: string | undefined;
+  confidence: number;
+  observedAt: Date;
 }

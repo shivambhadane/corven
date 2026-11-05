@@ -21,6 +21,9 @@ export function mapUniqueViolation(err: unknown): never {
     if (constraint === "agents_org_name_unique") {
       throw new ConflictError("An agent with this name already exists in your organization", "AGENT_NAME_CONFLICT");
     }
+    if (constraint === "agents_org_external_ref_unique") {
+      throw new ConflictError("An agent with this external reference already exists in your organization", "AGENT_EXTERNAL_REF_CONFLICT");
+    }
     if (constraint === "agent_identities_org_unique") {
       throw new ConflictError("This identity is already registered to an agent in your organization", "IDENTITY_CONFLICT");
     }
@@ -49,6 +52,9 @@ export const agentSnapshot = (a: Agent) => ({
   description: a.description,
   agentType: a.agentType,
   status: a.status,
+  runtimeType: a.runtimeType,
+  ownerReference: a.ownerReference,
+  externalReference: a.externalReference,
   metadata: a.metadata,
 });
 

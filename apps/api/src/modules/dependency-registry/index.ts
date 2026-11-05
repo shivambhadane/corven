@@ -6,6 +6,8 @@ import { DependencyRepository } from "./repositories/dependency.repository.js";
 import { ResourceRepository } from "./repositories/resource.repository.js";
 import { agentDependencyRoutes, dependencyRoutes } from "./routes/dependency.routes.js";
 import { resourceRoutes } from "./routes/resource.routes.js";
+import { DependencyGraphDataProvider } from "./services/dependency-graph-data.provider.js";
+import { DependencyRegistryWriter } from "./services/dependency-writer.service.js";
 import { DependencyService } from "./services/dependency.service.js";
 import { ResourceService } from "./services/resource.service.js";
 import { RelationshipValidator } from "./validators/relationship.validator.js";
@@ -19,18 +21,18 @@ export function createDependencyRegistry(
 ) {
   const resourcesRepo = new ResourceRepository();
   const validator = new RelationshipValidator(agents, resourcesRepo, deps);
+  const versions = new DependencyVersionService(deps);
+  const audit = new DependencyAuditService(deps);
+  const dependencies = new DependencyService(db, deps, agents, validator, versions, audit);
   return {
     repo: deps,
     resourcesRepo,
-    dependencies: new DependencyService(
-      db,
-      deps,
-      agents,
-      validator,
-      new DependencyVersionService(deps),
-      new DependencyAuditService(deps),
-    ),
+    dependencies,
     resources: new ResourceService(db, resourcesRepo),
+    /** Internal boundary for Dependency Discovery. Not exposed over HTTP. */
+    writer: new DependencyRegistryWriter(db, deps, validator, versions, audit, dependencies),
+    /** Stable read interface for the future Graph Engine. */
+    graphData: new DependencyGraphDataProvider(db, deps),
   };
 }
 

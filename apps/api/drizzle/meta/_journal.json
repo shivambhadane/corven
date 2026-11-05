@@ -29,6 +29,20 @@
       "when": 1793910342602,
       "tag": "0003_dependency_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793911524888,
+      "tag": "0004_discovery_prerequisites",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793911525749,
+      "tag": "0005_evidence_append_only",
+      "breakpoints": true
     }
   ]
 }
