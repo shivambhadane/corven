@@ -42,6 +42,8 @@ const Uuid = Type.String({ format: "uuid" });
 const NameSchema = Type.String({ minLength: 1, maxLength: 120, ...NonBlank });
 const DescriptionSchema = Type.String({ maxLength: 2000 });
 const MetadataSchema = Type.Record(Type.String(), Type.Unknown());
+const RefString = Type.String({ minLength: 1, maxLength: 255, pattern: "\\S" });
+const ExternalRef = Type.String({ minLength: 1, maxLength: 255, pattern: "^[A-Za-z0-9][A-Za-z0-9._:/@-]*$" });
 
 export const IdentityInputSchema = Type.Object(
   {
@@ -59,6 +61,9 @@ export const CreateAgentBody = Type.Object(
     name: NameSchema,
     description: Type.Optional(DescriptionSchema),
     agentType: AgentTypeSchema,
+    runtimeType: Type.Optional(Type.String({ minLength: 1, maxLength: 64, pattern: "\\S" })),
+    ownerReference: Type.Optional(RefString),
+    externalReference: Type.Optional(ExternalRef),
     capabilities: Type.Optional(Type.Array(Type.String({ maxLength: 100 }), { maxItems: 100 })),
     identities: Type.Optional(Type.Array(IdentityInputSchema, { maxItems: 20 })),
     metadata: Type.Optional(MetadataSchema),
@@ -71,6 +76,9 @@ export const UpdateAgentBody = Type.Object(
     name: Type.Optional(NameSchema),
     description: Type.Optional(Type.Union([DescriptionSchema, Type.Null()])),
     agentType: Type.Optional(AgentTypeSchema),
+    runtimeType: Type.Optional(Type.Union([Type.String({ minLength: 1, maxLength: 64, pattern: "\\S" }), Type.Null()])),
+    ownerReference: Type.Optional(Type.Union([RefString, Type.Null()])),
+    externalReference: Type.Optional(Type.Union([ExternalRef, Type.Null()])),
     metadata: Type.Optional(MetadataSchema),
   },
   { additionalProperties: false, minProperties: 1 },
@@ -136,6 +144,9 @@ const agentResponseProps = {
   description: Type.Union([Type.String(), Type.Null()]),
   agentType: AgentTypeSchema,
   status: AgentStatusSchema,
+  runtimeType: Type.Union([Type.String(), Type.Null()]),
+  ownerReference: Type.Union([Type.String(), Type.Null()]),
+  externalReference: Type.Union([Type.String(), Type.Null()]),
   metadata: MetadataSchema,
   createdAt: Type.String(),
   updatedAt: Type.String(),

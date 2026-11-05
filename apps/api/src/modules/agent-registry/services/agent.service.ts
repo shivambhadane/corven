@@ -11,6 +11,9 @@ export interface CreateAgentInput {
   name: string;
   description?: string | undefined;
   agentType: AgentType;
+  runtimeType?: string | undefined;
+  ownerReference?: string | undefined;
+  externalReference?: string | undefined;
   capabilities?: string[] | undefined;
   identities?: IdentityInput[] | undefined;
   metadata?: Record<string, unknown> | undefined;
@@ -20,8 +23,13 @@ export interface UpdateAgentInput {
   name?: string | undefined;
   description?: string | null | undefined;
   agentType?: AgentType | undefined;
+  runtimeType?: string | null | undefined;
+  ownerReference?: string | null | undefined;
+  externalReference?: string | null | undefined;
   metadata?: Record<string, unknown> | undefined;
 }
+
+const clean = (v: string | null | undefined): string | null => (v == null ? null : v.trim() || null);
 
 export class AgentService {
   constructor(
@@ -45,6 +53,9 @@ export class AgentService {
           description: input.description?.trim() || null,
           agentType: input.agentType,
           status,
+          runtimeType: clean(input.runtimeType),
+          ownerReference: clean(input.ownerReference),
+          externalReference: clean(input.externalReference),
           metadata,
         });
         await this.repo.replaceCapabilities(tx, agent.id, capabilities);
@@ -102,6 +113,9 @@ export class AgentService {
     if (input.name !== undefined) patch.name = input.name.trim();
     if (input.description !== undefined) patch.description = input.description === null ? null : input.description.trim() || null;
     if (input.agentType !== undefined) patch.agentType = input.agentType;
+    if (input.runtimeType !== undefined) patch.runtimeType = clean(input.runtimeType);
+    if (input.ownerReference !== undefined) patch.ownerReference = clean(input.ownerReference);
+    if (input.externalReference !== undefined) patch.externalReference = clean(input.externalReference);
     if (input.metadata !== undefined) patch.metadata = assertSafeMetadata(input.metadata);
 
     try {

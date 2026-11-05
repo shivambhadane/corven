@@ -8,7 +8,8 @@ export type Role = (typeof ROLES)[number];
 export interface Principal {
   actorId: string;
   organizationId: string;
-  role: Role;
+  /** "system" is for internal modules (e.g. discovery); it can never come from an HTTP request. */
+  role: Role | "system";
 }
 
 export type Authenticator = (headers: Record<string, string | string[] | undefined>) => Principal | null;

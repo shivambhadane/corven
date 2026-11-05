@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { Database } from "../../db/client.js";
+import { AgentRegistryReader } from "./readers/agent-registry.reader.js";
 import { AgentRepository } from "./repositories/agent.repository.js";
 import { agentRoutes } from "./routes/agent.routes.js";
 import { AgentCapabilityService } from "./services/agent-capability.service.js";
@@ -10,6 +11,7 @@ import { AgentService } from "./services/agent.service.js";
 export function createAgentRegistry(db: Database, repo: AgentRepository = new AgentRepository()) {
   return {
     repo,
+    reader: new AgentRegistryReader(db, repo),
     agents: new AgentService(db, repo),
     status: new AgentStatusService(db, repo),
     capabilities: new AgentCapabilityService(db, repo),
