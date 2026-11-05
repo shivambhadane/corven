@@ -2,6 +2,7 @@ import { assertCan } from "../../../auth/permissions.js";
 import type { Principal } from "../../../auth/principal.js";
 import type { Database } from "../../../db/client.js";
 import { ConflictError, NotFoundError } from "../../../errors.js";
+import { assertSafeMetadata } from "../../agent-registry/policies/agent-input.policy.js";
 import { pgError } from "../../agent-registry/services/shared.js";
 import type { ResourceRepository } from "../repositories/resource.repository.js";
 import type { Resource, ResourceType } from "../types/dependency.types.js";
@@ -13,19 +14,34 @@ export class ResourceService {
     private readonly repo: ResourceRepository,
   ) {}
 
-  async create(principal: Principal, input: { name: string; resourceType: ResourceType; description?: string | undefined }): Promise<Resource> {
+  async create(
+    principal: Principal,
+    input: {
+      name: string;
+      resourceType: ResourceType;
+      description?: string | undefined;
+      externalReference?: string | undefined;
+      metadata?: Record<string, unknown> | undefined;
+    },
+  ): Promise<Resource> {
     assertCan(principal, "resource:write");
+    const metadata = assertSafeMetadata(input.metadata ?? {});
     try {
       return await this.repo.insert(this.db, {
         organizationId: principal.organizationId,
         name: input.name.trim(),
         resourceType: input.resourceType,
         description: input.description?.trim() || null,
+        externalReference: input.externalReference?.trim() || null,
+        metadata,
       });
     } catch (err) {
       const { code, constraint } = pgError(err);
       if (code === "23505" && constraint === "resources_org_name_unique") {
         throw new ConflictError("A resource with this name already exists in your organization", "RESOURCE_NAME_CONFLICT");
+      }
+      if (code === "23505" && constraint === "resources_org_external_ref_unique") {
+        throw new ConflictError("A resource with this external reference already exists in your organization", "RESOURCE_EXTERNAL_REF_CONFLICT");
       }
       throw err;
     }

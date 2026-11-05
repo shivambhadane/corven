@@ -1,11 +1,15 @@
-import { and, asc, count, desc, eq, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import type { Executor } from "../../../db/client.js";
-import { dependencies, dependencyAuditLogs, dependencyVersions } from "../../../db/schema.js";
+import { dependencies, dependencyAuditLogs, dependencyEvidence, dependencyVersions } from "../../../db/schema.js";
 import type {
   ChangeType,
   Dependency,
   DependencyAuditAction,
   DependencyAuditEntry,
+  DependencyEvidence,
+  EvidenceInput,
+  EvidenceKind,
+  EvidenceSourceType,
   DependencyStatus,
   DependencyType,
   DependencyVersion,
@@ -230,5 +234,79 @@ export class DependencyRepository {
       .where(and(eq(dependencyAuditLogs.organizationId, organizationId), eq(dependencyAuditLogs.dependencyId, dependencyId)))
       .orderBy(asc(dependencyAuditLogs.createdAt), asc(dependencyAuditLogs.id));
     return rows.map((r) => ({ ...r, action: r.action as DependencyAuditAction }));
+  }
+
+  // ----- evidence (append-only)
+
+  /** Inserts evidence; a retried run's duplicate is ignored. Returns true if a new row was written. */
+  async insertEvidence(tx: Executor, organizationId: string, dependencyId: string, e: EvidenceInput): Promise<boolean> {
+    const rows = await tx
+      .insert(dependencyEvidence)
+      .values({
+        organizationId,
+        dependencyId,
+        sourceType: e.sourceType,
+        sourceReference: e.sourceReference ?? null,
+        discoveryRunId: e.discoveryRunId ?? null,
+        evidenceKind: e.evidenceKind,
+        evidenceReference: e.evidenceReference ?? null,
+        sourceVersion: e.sourceVersion ?? null,
+        confidence: e.confidence,
+        observedAt: e.observedAt,
+      })
+      .onConflictDoNothing()
+      .returning({ id: dependencyEvidence.id });
+    return rows.length > 0;
+  }
+
+  async listEvidence(
+    tx: Executor,
+    organizationId: string,
+    dependencyId: string,
+    page: { limit: number; offset: number },
+  ): Promise<{ items: DependencyEvidence[]; total: number }> {
+    const where = and(eq(dependencyEvidence.organizationId, organizationId), eq(dependencyEvidence.dependencyId, dependencyId));
+    const [rows, totals] = await Promise.all([
+      tx.select().from(dependencyEvidence).where(where).orderBy(desc(dependencyEvidence.observedAt), desc(dependencyEvidence.id)).limit(page.limit).offset(page.offset),
+      tx.select({ n: count() }).from(dependencyEvidence).where(where),
+    ]);
+    return {
+      items: rows.map((r) => ({
+        ...r,
+        sourceType: r.sourceType as EvidenceSourceType,
+        evidenceKind: r.evidenceKind as EvidenceKind,
+      })),
+      total: totals[0]?.n ?? 0,
+    };
+  }
+
+  /**
+   * Moves last_verified_at forward (never backward) WITHOUT creating a version:
+   * a fresh observation of an unchanged relationship is not a change to it.
+   * The observation itself is preserved in dependency_evidence.
+   */
+  async touchVerified(tx: Executor, organizationId: string, id: string, at: Date): Promise<void> {
+    await tx
+      .update(dependencies)
+      .set({ lastVerifiedAt: sql`greatest(coalesce(${dependencies.lastVerifiedAt}, ${at.toISOString()}::timestamptz), ${at.toISOString()}::timestamptz)` })
+      .where(and(eq(dependencies.organizationId, organizationId), eq(dependencies.id, id)));
+  }
+
+  // ----- bulk read for the future Graph Engine
+
+  async listActive(
+    tx: Executor,
+    organizationId: string,
+    f: { observedAfter?: Date | undefined; dependencyTypes?: DependencyType[] | undefined } = {},
+  ): Promise<Dependency[]> {
+    const conds: SQL[] = [eq(dependencies.organizationId, organizationId), eq(dependencies.status, "active")];
+    if (f.dependencyTypes?.length) conds.push(inArray(dependencies.dependencyType, f.dependencyTypes));
+    if (f.observedAfter) {
+      conds.push(
+        sql`greatest(coalesce(${dependencies.observedAt}, '-infinity'::timestamptz), coalesce(${dependencies.lastVerifiedAt}, '-infinity'::timestamptz)) >= ${f.observedAfter.toISOString()}::timestamptz`,
+      );
+    }
+    const rows = await tx.select().from(dependencies).where(and(...conds)).orderBy(asc(dependencies.createdAt), asc(dependencies.id));
+    return rows.map(toDependency);
   }
 }

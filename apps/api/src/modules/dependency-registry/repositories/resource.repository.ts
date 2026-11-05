@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import type { Executor } from "../../../db/client.js";
 import { resources } from "../../../db/schema.js";
 import type { Resource, ResourceType } from "../types/dependency.types.js";
@@ -9,19 +9,32 @@ const toResource = (r: typeof resources.$inferSelect): Resource => ({
   name: r.name,
   resourceType: r.resourceType as ResourceType,
   description: r.description,
+  externalReference: r.externalReference,
+  metadata: r.metadata,
   createdAt: r.createdAt,
   updatedAt: r.updatedAt,
 });
 
 /** Minimum resource persistence: insert and read only. No update, no delete. */
 export class ResourceRepository {
-  async insert(tx: Executor, v: { organizationId: string; name: string; resourceType: ResourceType; description: string | null }): Promise<Resource> {
+  async insert(
+    tx: Executor,
+    v: { organizationId: string; name: string; resourceType: ResourceType; description: string | null; externalReference: string | null; metadata: Record<string, unknown> },
+  ): Promise<Resource> {
     const [row] = await tx.insert(resources).values(v).returning();
     return toResource(row!);
   }
 
   async find(tx: Executor, organizationId: string, id: string): Promise<Resource | null> {
     const rows = await tx.select().from(resources).where(and(eq(resources.organizationId, organizationId), eq(resources.id, id)));
+    return rows[0] ? toResource(rows[0]) : null;
+  }
+
+  async findByExternalReference(tx: Executor, organizationId: string, externalReference: string): Promise<Resource | null> {
+    const rows = await tx
+      .select()
+      .from(resources)
+      .where(and(eq(resources.organizationId, organizationId), sql`lower(${resources.externalReference}) = lower(${externalReference})`));
     return rows[0] ? toResource(rows[0]) : null;
   }
 
