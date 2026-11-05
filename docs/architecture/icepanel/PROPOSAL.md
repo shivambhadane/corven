@@ -49,3 +49,23 @@ Incident Management is the orchestrator. It calls Blast-Radius, Containment, App
 2. Create L1, L2, L3 diagrams (one story each) with hand-placed layout.
 3. Run `verify` and hand over the landscape link.
 4. Add flows and the deployment view as follow-ups.
+
+---
+
+# Addendum v2 (draft, not imported)
+
+Model file: [model-v2.json](model-v2.json) — a full superset of `model.json`; re-importing upserts by id, no duplicates, no `prune`.
+
+## Added
+- **5 components:** Dependency Discovery, Graph Snapshot Service, Policy Evaluator, Agent Enforcement Adapter, Credential Enforcement Adapter.
+- **Capability tags** (10): each capability from the brief is a tag on the components that deliver it, filterable in IcePanel. Capability 10 (evidence) was inferred because the prompt was cut off after item 9.
+- **Trust-zone tags** (4): user-facing, CORVEN trusted core, untrusted/agent side, external services.
+- **Deployment groups** (4): Vercel, AWS EC2 (Docker), Neon, Ethereum Sepolia, plus GitHub Actions as an external system.
+- **11 connections**, including enforcement adapters to agents and resources, and verification probes.
+- **Status `future`** on every object and connection. Nothing is implemented, and the first import left them at the default.
+- Sharper descriptions for Blast-Radius, Approval (plan-bound), Verification (independent) and the Gateway.
+
+## Still to do after approval
+- New diagrams: capability map, deployment view, enforcement path, and an updated analysis diagram including snapshots and discovery.
+- Flows: the plugin has no documented flow operations, so sequences stay in `docs/architecture/07-incident-sequence-diagrams.md` unless you want me to try the raw API.
+- Requirements after item 9 of the prompt, once resent.
