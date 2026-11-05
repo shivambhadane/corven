@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+build/
+.next/
+out/
+coverage/
+*.log
+.DS_Store
+.vscode/
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
