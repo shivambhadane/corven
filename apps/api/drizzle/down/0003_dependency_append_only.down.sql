@@ -1,0 +1,4 @@
+DROP TRIGGER IF EXISTS dependency_audit_logs_no_truncate ON dependency_audit_logs;
+DROP TRIGGER IF EXISTS dependency_audit_logs_append_only ON dependency_audit_logs;
+DROP TRIGGER IF EXISTS dependency_versions_no_truncate ON dependency_versions;
+DROP TRIGGER IF EXISTS dependency_versions_append_only ON dependency_versions;
