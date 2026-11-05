@@ -1,0 +1,15 @@
+# Local development / test PostgreSQL. Credentials are local-only throwaways.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: corven
+      POSTGRES_PASSWORD: corven_local_only
+      POSTGRES_DB: corven
+    ports:
+      - "127.0.0.1:54329:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U corven"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
