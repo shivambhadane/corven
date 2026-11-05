@@ -1,0 +1,535 @@
+{
+  "namespace": "corven",
+  "modelObjects": [
+    {
+      "id": "d-corven",
+      "name": "CORVEN",
+      "type": "domain",
+      "caption": "Autonomous systems security",
+      "description": "Architecture of CORVEN, dependency-aware incident response for autonomous AI agent networks."
+    },
+    {
+      "id": "a-operator",
+      "name": "Security Operator",
+      "type": "actor",
+      "caption": "Investigates and approves",
+      "description": "Security engineer or infrastructure operator who investigates incidents and approves sensitive containment.",
+      "parentId": "d-corven"
+    },
+    {
+      "id": "a-owner",
+      "name": "Agent Owner",
+      "type": "actor",
+      "caption": "Registers agents",
+      "description": "Platform developer or owner who registers agents, permissions, resources and workflows.",
+      "parentId": "d-corven"
+    },
+    {
+      "id": "a-auditor",
+      "name": "Auditor",
+      "type": "actor",
+      "caption": "Verifies evidence",
+      "description": "Independently checks incident records and response history.",
+      "parentId": "d-corven"
+    },
+    {
+      "id": "s-corven",
+      "name": "CORVEN",
+      "type": "system",
+      "caption": "Incident response layer",
+      "description": "Maps agent dependencies, calculates blast radius, plans and enforces minimum safe containment, verifies the result and records evidence.",
+      "parentId": "d-corven"
+    },
+    {
+      "id": "s-agents",
+      "name": "Monitored AI Agents",
+      "type": "system",
+      "caption": "Agents under protection",
+      "description": "Autonomous agents and their workflows whose operations pass through CORVEN enforcement points.",
+      "parentId": "d-corven",
+      "external": true
+    },
+    {
+      "id": "s-resources",
+      "name": "Protected Resources",
+      "type": "system",
+      "caption": "APIs, data, credentials",
+      "description": "Wallets, APIs, databases and credentials agents depend on. CORVEN can only enforce on those routed through its gateway.",
+      "parentId": "d-corven",
+      "external": true
+    },
+    {
+      "id": "s-signal",
+      "name": "Incident Signal Source",
+      "type": "system",
+      "caption": "External detection",
+      "description": "Source of external compromise signals. Not yet defined in the PRD.",
+      "parentId": "d-corven",
+      "external": true
+    },
+    {
+      "id": "s-ens",
+      "name": "ENS",
+      "type": "system",
+      "caption": "Agent identity names",
+      "description": "Provides ENS names used as agent identity references.",
+      "parentId": "d-corven",
+      "external": true
+    },
+    {
+      "id": "s-eth",
+      "name": "Ethereum Sepolia",
+      "type": "system",
+      "caption": "Testnet blockchain",
+      "description": "Hosts CORVEN contracts and provides transaction references.",
+      "parentId": "d-corven",
+      "external": true
+    },
+    {
+      "id": "s-arkiv",
+      "name": "Arkiv",
+      "type": "system",
+      "caption": "Decentralized records",
+      "description": "Stores incident snapshots, plans and outcomes for later retrieval.",
+      "parentId": "d-corven",
+      "external": true
+    },
+    {
+      "id": "s-cre",
+      "name": "Chainlink CRE",
+      "type": "system",
+      "caption": "Workflow runtime",
+      "description": "Runs the incident workflow that validates signals and triggers on-chain response.",
+      "parentId": "d-corven",
+      "external": true
+    },
+    {
+      "id": "app-web",
+      "name": "Web Dashboard",
+      "type": "app",
+      "caption": "Operator UI",
+      "description": "Dependency graph, incident detail, containment approval and evidence viewer.",
+      "parentId": "s-corven"
+    },
+    {
+      "id": "app-api",
+      "name": "Backend API",
+      "type": "app",
+      "caption": "Modular monolith",
+      "description": "Fastify service hosting all domain modules and integration adapters. Single deployable unit.",
+      "parentId": "s-corven"
+    },
+    {
+      "id": "store-db",
+      "name": "PostgreSQL",
+      "type": "store",
+      "caption": "Operational source of truth",
+      "description": "Agents, dependencies, incidents, plans, approvals, execution records and evidence.",
+      "parentId": "s-corven"
+    },
+    {
+      "id": "app-contracts",
+      "name": "CORVEN Contracts",
+      "type": "app",
+      "caption": "On-chain permission state",
+      "description": "Solidity contracts on Sepolia holding revocable authorization and emitting response events.",
+      "parentId": "s-corven"
+    },
+    {
+      "id": "c-agent-reg",
+      "name": "Agent Registry",
+      "type": "component",
+      "caption": "Agents and status",
+      "description": "Registers agents, identity references and status changes.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-dep-reg",
+      "name": "Dependency Registry",
+      "type": "component",
+      "caption": "Typed relationships",
+      "description": "Stores authority, resource and operational dependencies.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-graph",
+      "name": "Graph Engine",
+      "type": "component",
+      "caption": "Deterministic graph",
+      "description": "Builds the typed graph and answers traversal, path and shared-dependency queries.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-incident",
+      "name": "Incident Management",
+      "type": "component",
+      "caption": "Incident lifecycle",
+      "description": "Owns incident state machine and orchestrates the response.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-blast",
+      "name": "Blast-Radius Engine",
+      "type": "component",
+      "caption": "Impact analysis",
+      "description": "Computes affected agents, resources and workflows with explaining paths.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-contain",
+      "name": "Containment Engine",
+      "type": "component",
+      "caption": "Minimum safe plan",
+      "description": "Deterministically computes the smallest safe set of authorization changes.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-gateway",
+      "name": "Authorization Gateway",
+      "type": "component",
+      "caption": "Enforcement boundary",
+      "description": "Checks and enforces authorization on operations and rechecks in-flight ones.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-approval",
+      "name": "Approval Service",
+      "type": "component",
+      "caption": "Human approval",
+      "description": "Presents plans and records approvals or rejections from authorized users.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-verify",
+      "name": "Verification Service",
+      "type": "component",
+      "caption": "Post-containment checks",
+      "description": "Retries the blocked operation and tests a healthy workflow.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-evidence",
+      "name": "Evidence Service",
+      "type": "component",
+      "caption": "Hash-linked records",
+      "description": "Hashes, signs and links incident records and retrieves them for verification.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-ad-eth",
+      "name": "Ethereum Adapter",
+      "type": "component",
+      "caption": "Chain access",
+      "description": "Submits transactions and reads contract state.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-ad-ens",
+      "name": "ENS Adapter",
+      "type": "component",
+      "caption": "Identity resolution",
+      "description": "Resolves and validates ENS names.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-ad-arkiv",
+      "name": "Arkiv Adapter",
+      "type": "component",
+      "caption": "Record storage",
+      "description": "Writes and reads Arkiv records.",
+      "parentId": "app-api"
+    },
+    {
+      "id": "c-ad-cre",
+      "name": "CRE Adapter",
+      "type": "component",
+      "caption": "Signal intake",
+      "description": "Receives and validates workflow results from Chainlink CRE.",
+      "parentId": "app-api"
+    }
+  ],
+  "modelConnections": [
+    {
+      "id": "conn-l1-owner",
+      "name": "Registers agents in",
+      "direction": "outgoing",
+      "originId": "a-owner",
+      "targetId": "s-corven"
+    },
+    {
+      "id": "conn-l1-op",
+      "name": "Investigates incidents in",
+      "direction": "outgoing",
+      "originId": "a-operator",
+      "targetId": "s-corven"
+    },
+    {
+      "id": "conn-l1-aud",
+      "name": "Verifies evidence from",
+      "direction": "outgoing",
+      "originId": "a-auditor",
+      "targetId": "s-corven"
+    },
+    {
+      "id": "conn-l1-agents",
+      "name": "Requests operations through",
+      "direction": "outgoing",
+      "originId": "s-agents",
+      "targetId": "s-corven",
+      "description": "Operations pass through CORVEN's enforcement boundary."
+    },
+    {
+      "id": "conn-l1-res",
+      "name": "Protects access to",
+      "direction": "outgoing",
+      "originId": "s-corven",
+      "targetId": "s-resources",
+      "description": "Only for resources routed through the gateway."
+    },
+    {
+      "id": "conn-l1-sig",
+      "name": "Sends compromise signals to",
+      "direction": "outgoing",
+      "originId": "s-signal",
+      "targetId": "s-cre"
+    },
+    {
+      "id": "conn-l1-ens",
+      "name": "Resolves agent identities with",
+      "direction": "outgoing",
+      "originId": "s-corven",
+      "targetId": "s-ens"
+    },
+    {
+      "id": "conn-l1-eth",
+      "name": "Enforces permissions on",
+      "direction": "outgoing",
+      "originId": "s-corven",
+      "targetId": "s-eth"
+    },
+    {
+      "id": "conn-l1-arkiv",
+      "name": "Stores incident records in",
+      "direction": "outgoing",
+      "originId": "s-corven",
+      "targetId": "s-arkiv"
+    },
+    {
+      "id": "conn-l1-cre",
+      "name": "Sends workflow results to",
+      "direction": "outgoing",
+      "originId": "s-cre",
+      "targetId": "s-corven"
+    },
+    {
+      "id": "conn-web-api",
+      "name": "Calls (HTTPS/JSON)",
+      "direction": "outgoing",
+      "originId": "app-web",
+      "targetId": "app-api"
+    },
+    {
+      "id": "conn-api-db",
+      "name": "Reads from and writes to (SQL)",
+      "direction": "outgoing",
+      "originId": "app-api",
+      "targetId": "store-db"
+    },
+    {
+      "id": "conn-api-contracts",
+      "name": "Submits transactions to",
+      "direction": "outgoing",
+      "originId": "app-api",
+      "targetId": "app-contracts"
+    },
+    {
+      "id": "conn-cre-contracts",
+      "name": "Triggers on-chain response in",
+      "direction": "outgoing",
+      "originId": "s-cre",
+      "targetId": "app-contracts"
+    },
+    {
+      "id": "conn-api-ens",
+      "name": "Resolves names with",
+      "direction": "outgoing",
+      "originId": "app-api",
+      "targetId": "s-ens"
+    },
+    {
+      "id": "conn-api-arkiv",
+      "name": "Writes and reads records in",
+      "direction": "outgoing",
+      "originId": "app-api",
+      "targetId": "s-arkiv"
+    },
+    {
+      "id": "conn-cre-api",
+      "name": "Sends validated signals to",
+      "direction": "outgoing",
+      "originId": "s-cre",
+      "targetId": "app-api"
+    },
+    {
+      "id": "conn-agents-api",
+      "name": "Requests operations through",
+      "direction": "outgoing",
+      "originId": "s-agents",
+      "targetId": "app-api"
+    },
+    {
+      "id": "conn-contracts-eth",
+      "name": "Deployed on",
+      "direction": "outgoing",
+      "originId": "app-contracts",
+      "targetId": "s-eth"
+    },
+    {
+      "id": "conn-op-web",
+      "name": "Uses",
+      "direction": "outgoing",
+      "originId": "a-operator",
+      "targetId": "app-web"
+    },
+    {
+      "id": "conn-owner-web",
+      "name": "Registers agents with",
+      "direction": "outgoing",
+      "originId": "a-owner",
+      "targetId": "app-web"
+    },
+    {
+      "id": "conn-aud-web",
+      "name": "Inspects evidence in",
+      "direction": "outgoing",
+      "originId": "a-auditor",
+      "targetId": "app-web"
+    },
+    {
+      "id": "conn-agentreg-dep",
+      "name": "Registers relationships with",
+      "direction": "outgoing",
+      "originId": "c-agent-reg",
+      "targetId": "c-dep-reg"
+    },
+    {
+      "id": "conn-graph-agent",
+      "name": "Reads agents from",
+      "direction": "outgoing",
+      "originId": "c-graph",
+      "targetId": "c-agent-reg"
+    },
+    {
+      "id": "conn-graph-dep",
+      "name": "Reads dependencies from",
+      "direction": "outgoing",
+      "originId": "c-graph",
+      "targetId": "c-dep-reg"
+    },
+    {
+      "id": "conn-blast-graph",
+      "name": "Queries",
+      "direction": "outgoing",
+      "originId": "c-blast",
+      "targetId": "c-graph"
+    },
+    {
+      "id": "conn-contain-graph",
+      "name": "Queries",
+      "direction": "outgoing",
+      "originId": "c-contain",
+      "targetId": "c-graph"
+    },
+    {
+      "id": "conn-contain-blast",
+      "name": "Consumes impact from",
+      "direction": "outgoing",
+      "originId": "c-contain",
+      "targetId": "c-blast"
+    },
+    {
+      "id": "conn-inc-blast",
+      "name": "Requests analysis from",
+      "direction": "outgoing",
+      "originId": "c-incident",
+      "targetId": "c-blast"
+    },
+    {
+      "id": "conn-inc-contain",
+      "name": "Requests plan from",
+      "direction": "outgoing",
+      "originId": "c-incident",
+      "targetId": "c-contain"
+    },
+    {
+      "id": "conn-inc-approval",
+      "name": "Requests approval from",
+      "direction": "outgoing",
+      "originId": "c-incident",
+      "targetId": "c-approval"
+    },
+    {
+      "id": "conn-inc-gateway",
+      "name": "Applies approved changes via",
+      "direction": "outgoing",
+      "originId": "c-incident",
+      "targetId": "c-gateway"
+    },
+    {
+      "id": "conn-inc-verify",
+      "name": "Requests verification from",
+      "direction": "outgoing",
+      "originId": "c-incident",
+      "targetId": "c-verify"
+    },
+    {
+      "id": "conn-inc-evidence",
+      "name": "Records stages in",
+      "direction": "outgoing",
+      "originId": "c-incident",
+      "targetId": "c-evidence"
+    },
+    {
+      "id": "conn-verify-gateway",
+      "name": "Retries operations through",
+      "direction": "outgoing",
+      "originId": "c-verify",
+      "targetId": "c-gateway"
+    },
+    {
+      "id": "conn-gateway-eth",
+      "name": "Submits revocations via",
+      "direction": "outgoing",
+      "originId": "c-gateway",
+      "targetId": "c-ad-eth"
+    },
+    {
+      "id": "conn-evidence-eth",
+      "name": "Anchors hashes via",
+      "direction": "outgoing",
+      "originId": "c-evidence",
+      "targetId": "c-ad-eth"
+    },
+    {
+      "id": "conn-evidence-arkiv",
+      "name": "Stores records via",
+      "direction": "outgoing",
+      "originId": "c-evidence",
+      "targetId": "c-ad-arkiv"
+    },
+    {
+      "id": "conn-agentreg-ens",
+      "name": "Resolves identities via",
+      "direction": "outgoing",
+      "originId": "c-agent-reg",
+      "targetId": "c-ad-ens"
+    },
+    {
+      "id": "conn-cre-incident",
+      "name": "Creates incidents in",
+      "direction": "outgoing",
+      "originId": "c-ad-cre",
+      "targetId": "c-incident"
+    }
+  ]
+}
