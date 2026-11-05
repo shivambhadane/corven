@@ -46,3 +46,10 @@ export class ValidationError extends AppError {
     super(400, "VALIDATION_ERROR", message, details);
   }
 }
+
+/** The request is well-formed but violates a domain rule (e.g. an invalid relationship). */
+export class UnprocessableError extends AppError {
+  constructor(code: string, message: string, details?: unknown) {
+    super(422, code, message, details);
+  }
+}

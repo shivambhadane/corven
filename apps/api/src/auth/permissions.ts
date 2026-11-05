@@ -6,7 +6,11 @@ export type Permission =
   | "agent:write"
   | "agent:status"
   | "agent:recover"
-  | "agent:identity:verify";
+  | "agent:identity:verify"
+  | "dependency:read"
+  | "dependency:write"
+  | "resource:read"
+  | "resource:write";
 
 const GRANTS: Record<Role, ReadonlySet<Permission>> = {
   admin: new Set<Permission>([
@@ -15,9 +19,21 @@ const GRANTS: Record<Role, ReadonlySet<Permission>> = {
     "agent:status",
     "agent:recover",
     "agent:identity:verify",
+    "dependency:read",
+    "dependency:write",
+    "resource:read",
+    "resource:write",
   ]),
-  operator: new Set<Permission>(["agent:read", "agent:write", "agent:status"]),
-  viewer: new Set<Permission>(["agent:read"]),
+  operator: new Set<Permission>([
+    "agent:read",
+    "agent:write",
+    "agent:status",
+    "dependency:read",
+    "dependency:write",
+    "resource:read",
+    "resource:write",
+  ]),
+  viewer: new Set<Permission>(["agent:read", "dependency:read", "resource:read"]),
 };
 
 export function can(principal: Principal, permission: Permission): boolean {

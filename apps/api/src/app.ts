@@ -5,6 +5,7 @@ import type { Authenticator, Principal } from "./auth/principal.js";
 import type { Database } from "./db/client.js";
 import { AppError, UnauthorizedError } from "./errors.js";
 import { createAgentRegistry, registerAgentRegistry } from "./modules/agent-registry/index.js";
+import { createDependencyRegistry, registerDependencyRegistry } from "./modules/dependency-registry/index.js";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -16,6 +17,7 @@ export interface BuildAppOptions {
   db: Database;
   authenticate: Authenticator;
   registry?: ReturnType<typeof createAgentRegistry>;
+  dependencyRegistry?: ReturnType<typeof createDependencyRegistry>;
   logger?: boolean;
 }
 
@@ -63,6 +65,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
     return reply.code(500).send({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
   });
 
-  await registerAgentRegistry(app, opts.registry ?? createAgentRegistry(opts.db));
+  const registry = opts.registry ?? createAgentRegistry(opts.db);
+  await registerAgentRegistry(app, registry);
+  await registerDependencyRegistry(app, opts.dependencyRegistry ?? createDependencyRegistry(opts.db, registry.repo));
   return app;
 }
