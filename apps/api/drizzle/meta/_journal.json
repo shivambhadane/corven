@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793908442706,
+      "tag": "0000_agent_registry",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793908448908,
+      "tag": "0001_append_only_audit",
+      "breakpoints": true
+    }
+  ]
+}
