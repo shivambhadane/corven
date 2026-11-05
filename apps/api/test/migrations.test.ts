@@ -18,19 +18,26 @@ describe("migrations", () => {
     url.pathname = `/${dbName}`;
     const handle = createDb(url.toString());
     const tables = async () =>
-      (await handle.pool.query("select table_name from information_schema.tables where table_schema='public' and table_name like 'agent%' order by 1")).rows.map((r) => r.table_name);
+      (await handle.pool.query("select table_name from information_schema.tables where table_schema='public' and table_name in ('agents','agent_capabilities','agent_identities','agent_status_history','agent_audit_logs','dependencies','dependency_versions','dependency_audit_logs','resources') order by 1")).rows.map((r) => r.table_name);
     try {
       await runMigrations(handle.db);
       await runMigrations(handle.db); // idempotent
-      expect(await tables()).toEqual(["agent_audit_logs", "agent_capabilities", "agent_identities", "agent_status_history", "agents"]);
+      const expected = [
+        "agent_audit_logs", "agent_capabilities", "agent_identities", "agent_status_history", "agents",
+        "dependencies", "dependency_audit_logs", "dependency_versions", "resources",
+      ];
+      expect(await tables()).toEqual(expected);
 
-      await handle.pool.query(down("0001_append_only_audit.down.sql"));
-      await handle.pool.query(down("0000_agent_registry.down.sql"));
+      // newest first
+      for (const f of [
+        "0003_dependency_append_only", "0002_dependency_registry",
+        "0001_append_only_audit", "0000_agent_registry",
+      ]) await handle.pool.query(down(`${f}.down.sql`));
       expect(await tables()).toEqual([]);
 
       await handle.pool.query("drop schema drizzle cascade");
       await runMigrations(handle.db);
-      expect(await tables()).toHaveLength(5);
+      expect(await tables()).toEqual(expected);
     } finally {
       await handle.close();
       await admin.query(`DROP DATABASE IF EXISTS ${dbName} WITH (FORCE)`);

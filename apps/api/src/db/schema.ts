@@ -1,12 +1,15 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  doublePrecision,
+  foreignKey,
   index,
   integer,
   jsonb,
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
   varchar,
@@ -39,6 +42,9 @@ export const agents = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
+    // Lets child tables reference (id, organization_id) so the database itself
+    // guarantees a referenced agent belongs to the same organization.
+    unique("agents_id_org_unique").on(t.id, t.organizationId),
     uniqueIndex("agents_org_name_unique").on(t.organizationId, sql`lower(${t.name})`),
     index("agents_org_status_idx").on(t.organizationId, t.status),
     index("agents_org_type_idx").on(t.organizationId, t.agentType),
@@ -144,4 +150,157 @@ export const agentAuditLogs = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("agent_audit_logs_agent_idx").on(t.organizationId, t.agentId, t.createdAt)],
+);
+
+// ---------------------------------------------------------------------------
+// Dependency Registry
+// ---------------------------------------------------------------------------
+
+/**
+ * Minimum resource model, only what dependency validation needs. This is not a
+ * Resource Management module: resources can be created and read, nothing more.
+ */
+export const resources = pgTable(
+  "resources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    resourceType: varchar("resource_type", { length: 32 }).notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("resources_id_org_unique").on(t.id, t.organizationId),
+    uniqueIndex("resources_org_name_unique").on(t.organizationId, sql`lower(${t.name})`),
+    index("resources_org_created_idx").on(t.organizationId, t.createdAt, t.id),
+    check(
+      "resources_type_check",
+      sql`${t.resourceType} in ('api','database','wallet','credential','storage','service','workflow','other')`,
+    ),
+    check("resources_name_not_blank", sql`length(btrim(${t.name})) > 0`),
+  ],
+);
+
+/**
+ * Polymorphic endpoints use SEPARATE reference columns per target table, each
+ * with a real composite foreign key (id, organization_id). A CHECK forces
+ * exactly the column matching *_type to be set. For the unused column the
+ * composite FK is skipped (NULL), which is exactly what we want. `source_id` /
+ * `target_id` are generated convenience columns.
+ */
+export const dependencies = pgTable(
+  "dependencies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    sourceType: varchar("source_type", { length: 16 }).notNull(),
+    sourceAgentId: uuid("source_agent_id"),
+    sourceResourceId: uuid("source_resource_id"),
+    sourceId: uuid("source_id").generatedAlwaysAs(sql`coalesce(source_agent_id, source_resource_id)`),
+    targetType: varchar("target_type", { length: 16 }).notNull(),
+    targetAgentId: uuid("target_agent_id"),
+    targetResourceId: uuid("target_resource_id"),
+    targetId: uuid("target_id").generatedAlwaysAs(sql`coalesce(target_agent_id, target_resource_id)`),
+    dependencyType: varchar("dependency_type", { length: 16 }).notNull(),
+    relationship: varchar("relationship", { length: 100 }).notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    provenance: jsonb("provenance").$type<Record<string, unknown>>().notNull(),
+    confidence: doublePrecision("confidence").notNull(),
+    observedAt: timestamp("observed_at", { withTimezone: true }),
+    lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+    status: varchar("status", { length: 16 }).notNull().default("active"),
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("dependencies_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({ columns: [t.sourceAgentId, t.organizationId], foreignColumns: [agents.id, agents.organizationId], name: "dependencies_source_agent_fk" }).onDelete("restrict"),
+    foreignKey({ columns: [t.sourceResourceId, t.organizationId], foreignColumns: [resources.id, resources.organizationId], name: "dependencies_source_resource_fk" }).onDelete("restrict"),
+    foreignKey({ columns: [t.targetAgentId, t.organizationId], foreignColumns: [agents.id, agents.organizationId], name: "dependencies_target_agent_fk" }).onDelete("restrict"),
+    foreignKey({ columns: [t.targetResourceId, t.organizationId], foreignColumns: [resources.id, resources.organizationId], name: "dependencies_target_resource_fk" }).onDelete("restrict"),
+    // one relationship per ordered pair and type, regardless of status
+    uniqueIndex("dependencies_pair_unique").on(
+      t.organizationId,
+      t.sourceType,
+      sql`coalesce(${t.sourceAgentId}, ${t.sourceResourceId})`,
+      t.targetType,
+      sql`coalesce(${t.targetAgentId}, ${t.targetResourceId})`,
+      t.dependencyType,
+    ),
+    index("dependencies_org_source_idx").on(t.organizationId, t.sourceType, t.sourceAgentId, t.sourceResourceId),
+    index("dependencies_org_target_idx").on(t.organizationId, t.targetType, t.targetAgentId, t.targetResourceId),
+    index("dependencies_org_type_status_idx").on(t.organizationId, t.dependencyType, t.status),
+    index("dependencies_org_created_idx").on(t.organizationId, t.createdAt, t.id),
+    check("dependencies_source_type_check", sql`${t.sourceType} in ('agent','resource')`),
+    check("dependencies_target_type_check", sql`${t.targetType} in ('agent','resource')`),
+    check("dependencies_type_check", sql`${t.dependencyType} in ('authority','resource','operational')`),
+    check("dependencies_status_check", sql`${t.status} in ('active','inactive')`),
+    check("dependencies_confidence_check", sql`${t.confidence} >= 0 and ${t.confidence} <= 1`),
+    check("dependencies_version_check", sql`${t.version} >= 1`),
+    check("dependencies_relationship_not_blank", sql`length(btrim(${t.relationship})) > 0`),
+    check(
+      "dependencies_source_ref_check",
+      sql`(${t.sourceType} = 'agent' and ${t.sourceAgentId} is not null and ${t.sourceResourceId} is null)
+        or (${t.sourceType} = 'resource' and ${t.sourceResourceId} is not null and ${t.sourceAgentId} is null)`,
+    ),
+    check(
+      "dependencies_target_ref_check",
+      sql`(${t.targetType} = 'agent' and ${t.targetAgentId} is not null and ${t.targetResourceId} is null)
+        or (${t.targetType} = 'resource' and ${t.targetResourceId} is not null and ${t.targetAgentId} is null)`,
+    ),
+    check(
+      "dependencies_no_self_reference",
+      sql`not (${t.sourceType} = ${t.targetType} and coalesce(${t.sourceAgentId}, ${t.sourceResourceId}) = coalesce(${t.targetAgentId}, ${t.targetResourceId}))`,
+    ),
+    // Defence in depth: the same source/target compatibility matrix as the application policy.
+    check(
+      "dependencies_type_matrix_check",
+      sql`(${t.dependencyType} = 'authority' and ${t.sourceType} = 'agent' and ${t.targetType} = 'agent')
+        or (${t.dependencyType} = 'resource' and ${t.sourceType} = 'agent' and ${t.targetType} = 'resource')
+        or (${t.dependencyType} = 'operational' and not (${t.sourceType} = 'resource' and ${t.targetType} = 'resource'))`,
+    ),
+  ],
+);
+
+export const dependencyVersions = pgTable(
+  "dependency_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    dependencyId: uuid("dependency_id").notNull(),
+    version: integer("version").notNull(),
+    changeType: varchar("change_type", { length: 16 }).notNull(),
+    changedBy: uuid("changed_by"),
+    state: jsonb("state").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ columns: [t.dependencyId, t.organizationId], foreignColumns: [dependencies.id, dependencies.organizationId], name: "dependency_versions_dependency_fk" }).onDelete("restrict"),
+    uniqueIndex("dependency_versions_unique").on(t.dependencyId, t.version),
+    check(
+      "dependency_versions_change_check",
+      sql`${t.changeType} in ('created','updated','activated','deactivated','removed')`,
+    ),
+  ],
+);
+
+export const dependencyAuditLogs = pgTable(
+  "dependency_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    dependencyId: uuid("dependency_id").notNull(),
+    actorId: uuid("actor_id"),
+    action: varchar("action", { length: 64 }).notNull(),
+    beforeState: jsonb("before_state"),
+    afterState: jsonb("after_state"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ columns: [t.dependencyId, t.organizationId], foreignColumns: [dependencies.id, dependencies.organizationId], name: "dependency_audit_logs_dependency_fk" }).onDelete("restrict"),
+    index("dependency_audit_logs_dep_idx").on(t.organizationId, t.dependencyId, t.createdAt),
+  ],
 );
