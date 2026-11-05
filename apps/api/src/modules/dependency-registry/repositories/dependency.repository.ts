@@ -145,10 +145,8 @@ export class DependencyRepository {
       conds.push((f.agent.direction === "outgoing" ? out : f.agent.direction === "incoming" ? inc : or(out, inc))!);
     }
     const where = and(...conds);
-    const [rows, totals] = await Promise.all([
-      tx.select().from(dependencies).where(where).orderBy(desc(dependencies.createdAt), desc(dependencies.id)).limit(f.limit).offset(f.offset),
-      tx.select({ n: count() }).from(dependencies).where(where),
-    ]);
+    const rows = await tx.select().from(dependencies).where(where).orderBy(desc(dependencies.createdAt), desc(dependencies.id)).limit(f.limit).offset(f.offset);
+    const totals = await tx.select({ n: count() }).from(dependencies).where(where);
     return { items: rows.map(toDependency), total: totals[0]?.n ?? 0 };
   }
 
@@ -212,10 +210,8 @@ export class DependencyRepository {
 
   async listVersions(tx: Executor, organizationId: string, dependencyId: string, page: { limit: number; offset: number }): Promise<{ items: DependencyVersion[]; total: number }> {
     const where = and(eq(dependencyVersions.organizationId, organizationId), eq(dependencyVersions.dependencyId, dependencyId));
-    const [rows, totals] = await Promise.all([
-      tx.select().from(dependencyVersions).where(where).orderBy(desc(dependencyVersions.version)).limit(page.limit).offset(page.offset),
-      tx.select({ n: count() }).from(dependencyVersions).where(where),
-    ]);
+    const rows = await tx.select().from(dependencyVersions).where(where).orderBy(desc(dependencyVersions.version)).limit(page.limit).offset(page.offset);
+    const totals = await tx.select({ n: count() }).from(dependencyVersions).where(where);
     return { items: rows.map((r) => ({ ...r, changeType: r.changeType as ChangeType })), total: totals[0]?.n ?? 0 };
   }
 
@@ -266,10 +262,8 @@ export class DependencyRepository {
     page: { limit: number; offset: number },
   ): Promise<{ items: DependencyEvidence[]; total: number }> {
     const where = and(eq(dependencyEvidence.organizationId, organizationId), eq(dependencyEvidence.dependencyId, dependencyId));
-    const [rows, totals] = await Promise.all([
-      tx.select().from(dependencyEvidence).where(where).orderBy(desc(dependencyEvidence.observedAt), desc(dependencyEvidence.id)).limit(page.limit).offset(page.offset),
-      tx.select({ n: count() }).from(dependencyEvidence).where(where),
-    ]);
+    const rows = await tx.select().from(dependencyEvidence).where(where).orderBy(desc(dependencyEvidence.observedAt), desc(dependencyEvidence.id)).limit(page.limit).offset(page.offset);
+    const totals = await tx.select({ n: count() }).from(dependencyEvidence).where(where);
     return {
       items: rows.map((r) => ({
         ...r,
@@ -290,6 +284,12 @@ export class DependencyRepository {
       .update(dependencies)
       .set({ lastVerifiedAt: sql`greatest(coalesce(${dependencies.lastVerifiedAt}, ${at.toISOString()}::timestamptz), ${at.toISOString()}::timestamptz)` })
       .where(and(eq(dependencies.organizationId, organizationId), eq(dependencies.id, id)));
+  }
+
+  /** Every dependency (all statuses) of the organization, in a stable order. */
+  async listAll(tx: Executor, organizationId: string): Promise<Dependency[]> {
+    const rows = await tx.select().from(dependencies).where(eq(dependencies.organizationId, organizationId)).orderBy(asc(dependencies.createdAt), asc(dependencies.id));
+    return rows.map(toDependency);
   }
 
   // ----- bulk read for the future Graph Engine

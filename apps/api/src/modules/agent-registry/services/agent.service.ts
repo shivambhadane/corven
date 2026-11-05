@@ -92,10 +92,8 @@ export class AgentService {
     const org = principal.organizationId;
     return this.db.transaction(async (tx) => {
       const agent = await loadAgent(this.repo, tx, org, agentId);
-      const [capabilities, identities] = await Promise.all([
-        this.repo.getCapabilities(tx, agent.id),
-        this.repo.getIdentities(tx, org, agent.id),
-      ]);
+      const capabilities = await this.repo.getCapabilities(tx, agent.id);
+      const identities = await this.repo.getIdentities(tx, org, agent.id);
       return { ...agent, capabilities, identities };
     });
   }
@@ -130,10 +128,8 @@ export class AgentService {
           beforeState: agentSnapshot(before),
           afterState: agentSnapshot(after),
         });
-        const [capabilities, identities] = await Promise.all([
-          this.repo.getCapabilities(tx, agentId),
-          this.repo.getIdentities(tx, org, agentId),
-        ]);
+        const capabilities = await this.repo.getCapabilities(tx, agentId);
+        const identities = await this.repo.getIdentities(tx, org, agentId);
         return { ...after, capabilities, identities };
       });
     } catch (err) {

@@ -89,6 +89,17 @@ export class AgentRepository {
     return rows[0] ? toAgent(rows[0]) : null;
   }
 
+  /** Every agent of the organization (pages internally). For consistent-snapshot readers such as the Graph Engine. */
+  async listAll(tx: Executor, organizationId: string): Promise<Agent[]> {
+    const out: Agent[] = [];
+    const limit = 500;
+    for (let offset = 0; ; offset += limit) {
+      const { items } = await this.listAgents(tx, organizationId, { limit, offset });
+      out.push(...items);
+      if (items.length < limit) return out;
+    }
+  }
+
   async findByExternalReference(tx: Executor, organizationId: string, externalReference: string): Promise<Agent | null> {
     const rows = await tx
       .select()
@@ -103,10 +114,8 @@ export class AgentRepository {
     if (f.agentType) conds.push(eq(agents.agentType, f.agentType));
     if (f.search) conds.push(ilike(agents.name, `%${escapeLike(f.search)}%`));
     const where = and(...conds);
-    const [rows, totals] = await Promise.all([
-      tx.select().from(agents).where(where).orderBy(desc(agents.createdAt), desc(agents.id)).limit(f.limit).offset(f.offset),
-      tx.select({ n: count() }).from(agents).where(where),
-    ]);
+    const rows = await tx.select().from(agents).where(where).orderBy(desc(agents.createdAt), desc(agents.id)).limit(f.limit).offset(f.offset);
+    const totals = await tx.select({ n: count() }).from(agents).where(where);
     return { items: rows.map(toAgent), total: totals[0]?.n ?? 0 };
   }
 
@@ -209,10 +218,8 @@ export class AgentRepository {
     page: { limit: number; offset: number },
   ): Promise<{ items: StatusHistoryEntry[]; total: number }> {
     const where = and(eq(agentStatusHistory.organizationId, organizationId), eq(agentStatusHistory.agentId, agentId));
-    const [rows, totals] = await Promise.all([
-      tx.select().from(agentStatusHistory).where(where).orderBy(desc(agentStatusHistory.createdAt), desc(agentStatusHistory.id)).limit(page.limit).offset(page.offset),
-      tx.select({ n: count() }).from(agentStatusHistory).where(where),
-    ]);
+    const rows = await tx.select().from(agentStatusHistory).where(where).orderBy(desc(agentStatusHistory.createdAt), desc(agentStatusHistory.id)).limit(page.limit).offset(page.offset);
+    const totals = await tx.select({ n: count() }).from(agentStatusHistory).where(where);
     return {
       items: rows.map((r) => ({
         id: r.id,

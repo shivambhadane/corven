@@ -5,6 +5,7 @@ import type { Authenticator, Principal } from "./auth/principal.js";
 import type { Database } from "./db/client.js";
 import { AppError, UnauthorizedError } from "./errors.js";
 import { createAgentRegistry, registerAgentRegistry } from "./modules/agent-registry/index.js";
+import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
 import { createDependencyRegistry, registerDependencyRegistry } from "./modules/dependency-registry/index.js";
 
 declare module "fastify" {
@@ -18,6 +19,7 @@ export interface BuildAppOptions {
   authenticate: Authenticator;
   registry?: ReturnType<typeof createAgentRegistry>;
   dependencyRegistry?: ReturnType<typeof createDependencyRegistry>;
+  graphEngine?: ReturnType<typeof createGraphEngine>;
   logger?: boolean;
 }
 
@@ -49,6 +51,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
 
   app.setErrorHandler((err, req, reply) => {
     if (err instanceof AppError) {
+      // Server-side failures keep their cause in the log only; the client sees the safe message.
+      if (err.statusCode >= 500) req.log.error({ err, cause: (err as { cause?: unknown }).cause }, "request failed");
       return reply.code(err.statusCode).send({
         error: { code: err.code, message: err.message, ...(err.details !== undefined ? { details: err.details } : {}) },
       });
@@ -67,6 +71,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
 
   const registry = opts.registry ?? createAgentRegistry(opts.db);
   await registerAgentRegistry(app, registry);
-  await registerDependencyRegistry(app, opts.dependencyRegistry ?? createDependencyRegistry(opts.db, registry.repo));
+  const dependencyRegistry = opts.dependencyRegistry ?? createDependencyRegistry(opts.db, registry.repo);
+  await registerDependencyRegistry(app, dependencyRegistry);
+  await registerGraphEngine(app, opts.graphEngine ?? createGraphEngine(opts.db, registry.repo, dependencyRegistry.resourcesRepo, dependencyRegistry.repo));
   return app;
 }
