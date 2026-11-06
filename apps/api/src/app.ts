@@ -20,6 +20,7 @@ import { createIncidentManagement, registerIncidentManagement } from "./modules/
 import { createGraphSnapshots, registerGraphSnapshots } from "./modules/graph-snapshot/index.js";
 import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
 import { createDependencyRegistry, registerDependencyRegistry } from "./modules/dependency-registry/index.js";
+import { createSaasModule, registerSaasRoutes, createApiKeyAuthenticator } from "./modules/saas/index.js";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -29,6 +30,7 @@ declare module "fastify" {
     verification: ReturnType<typeof createVerificationService>;
     evidence: ReturnType<typeof createEvidenceService>;
     orchestrator: ReturnType<typeof createOrchestrator>;
+    saas: ReturnType<typeof createSaasModule>;
     routeTable: Array<{ method: string; url: string; auth: string }>;
   }
   interface FastifyRequest {
@@ -57,6 +59,7 @@ export interface BuildAppOptions {
   now?: () => Date;
   /** Gateway wiring when `gateway` is not supplied. */
   gatewayOptions?: { agentAuth?: AgentAuthConfig | null; hooks?: GatewayHooks; executors?: ResourceExecutors; approvals?: ApprovalVerifier };
+  saas?: ReturnType<typeof createSaasModule>;
   discovery?: ReturnType<typeof createDependencyDiscovery>;
   /** Background queue for discovery runs. Defaults to an in-process queue; the server uses pg-boss. */
   discoveryQueue?: JobQueue;
@@ -66,6 +69,9 @@ export interface BuildAppOptions {
 }
 
 export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> {
+  const saas = opts.saas ?? createSaasModule(opts.db);
+  const authenticator = createApiKeyAuthenticator(saas.apiKeys, opts.authenticate);
+
   const app = Fastify({
     logger: opts.logger ?? false,
     ajv: {
@@ -91,7 +97,7 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
     if (!req.url.startsWith("/api/")) return;
     // Machine-facing routes authenticate themselves (an agent token) or are the public token exchange.
     if (req.routeOptions.config?.auth) return;
-    const principal = opts.authenticate(req.headers);
+    const principal = await authenticator(req.headers);
     if (!principal) throw new UnauthorizedError();
     req.principal = principal;
   });
@@ -208,6 +214,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   app.decorate("verification", verification);
   app.decorate("evidence", evidence);
   app.decorate("orchestrator", orchestrator);
+  await registerSaasRoutes(app, saas);
+  app.decorate("saas", saas);
   const discovery = opts.discovery ?? createDependencyDiscovery(opts.db, registry.repo, dependencyRegistry, opts.discoveryQueue);
   await registerDependencyDiscovery(app, discovery);
   await discovery.start();

@@ -1412,3 +1412,99 @@ export const workflowEvents = pgTable(
     index("workflow_events_idx").on(t.organizationId, t.workflowId, t.seq),
   ],
 );
+
+// ============================================================================
+// SaaS PLATFORM TABLES (Multi-Tenancy, M2M API Keys, Webhooks, Quotas)
+// ============================================================================
+
+export const organizations = pgTable(
+  "organizations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: varchar("name", { length: 120 }).notNull(),
+    slug: varchar("slug", { length: 60 }).notNull(),
+    tier: varchar("tier", { length: 20 }).notNull().default("starter"),
+    planStatus: varchar("plan_status", { length: 20 }).notNull().default("active"),
+    settings: jsonb("settings").notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("organizations_slug_unique").on(sql`lower(${t.slug})`),
+    check("organizations_tier_check", sql`${t.tier} in ('starter','pro','enterprise')`),
+    check("organizations_plan_status_check", sql`${t.planStatus} in ('active','past_due','cancelled')`),
+  ],
+);
+
+export const organizationMembers = pgTable(
+  "organization_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    role: varchar("role", { length: 20 }).notNull().default("operator"),
+    status: varchar("status", { length: 20 }).notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("organization_members_org_email_unique").on(t.organizationId, sql`lower(${t.email})`),
+    check("organization_members_role_check", sql`${t.role} in ('admin','operator','approver','viewer')`),
+    check("organization_members_status_check", sql`${t.status} in ('active','invited','suspended')`),
+  ],
+);
+
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    name: varchar("name", { length: 80 }).notNull(),
+    prefix: varchar("prefix", { length: 16 }).notNull(),
+    keyHash: varchar("key_hash", { length: 64 }).notNull(),
+    scopes: jsonb("scopes").notNull().default(sql`'[]'::jsonb`),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("api_keys_hash_unique").on(t.keyHash),
+    index("api_keys_org_prefix_idx").on(t.organizationId, t.prefix),
+  ],
+);
+
+export const webhooks = pgTable(
+  "webhooks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    url: text("url").notNull(),
+    secret: varchar("secret", { length: 64 }).notNull(),
+    events: jsonb("events").notNull().default(sql`'["*"]'::jsonb`),
+    status: varchar("status", { length: 20 }).notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("webhooks_status_check", sql`${t.status} in ('active','disabled')`),
+    index("webhooks_org_idx").on(t.organizationId, t.status),
+  ],
+);
+
+export const webhookDeliveries = pgTable(
+  "webhook_deliveries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    webhookId: uuid("webhook_id").notNull(),
+    event: varchar("event", { length: 60 }).notNull(),
+    statusCode: integer("status_code"),
+    durationMs: integer("duration_ms"),
+    success: boolean("success").notNull(),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("webhook_deliveries_org_idx").on(t.organizationId, t.webhookId, t.createdAt),
+  ],
+);

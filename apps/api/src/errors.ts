@@ -53,3 +53,10 @@ export class UnprocessableError extends AppError {
     super(422, code, message, details);
   }
 }
+
+export class QuotaExceededError extends AppError {
+  constructor(message = "Plan quota exceeded", details?: unknown) {
+    super(402, "QUOTA_EXCEEDED", message, details);
+  }
+}
+

@@ -13,4 +13,4 @@ export interface Principal {
   role: Role | "system";
 }
 
-export type Authenticator = (headers: Record<string, string | string[] | undefined>) => Principal | null;
+export type Authenticator = (headers: Record<string, string | string[] | undefined>) => (Principal | null) | Promise<Principal | null>;
