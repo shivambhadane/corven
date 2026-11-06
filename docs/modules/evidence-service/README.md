@@ -8,7 +8,7 @@
 | Integrity verification (hash, chain, sealed sources unchanged, anchors) | Real |
 | Arkiv publication | **Interface and in-memory test double only. No Arkiv client exists.** |
 | Ethereum anchoring: read side (receipt, confirmations, data check) | Real JSON-RPC client, tested against a fake transport; **never run against a live node** |
-| Ethereum anchoring: submitting a transaction | **Interface only.** Needs a signer (key management) that does not exist; without it a submit fails and the anchor is recorded `failed` |
+| Ethereum anchoring: submitting a transaction | **Implemented in `ViemEthereumAnchor` and tested against a local Anvil chain with a deployed copy of the contract. Not deployed to Sepolia; not wired into the server's startup.** See [ethereum-integration.md](ethereum-integration.md) |
 | ENS | Identity references are recorded as registered; **no live ENS resolution** |
 
 ## Purpose

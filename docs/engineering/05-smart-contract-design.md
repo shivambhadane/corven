@@ -1,5 +1,7 @@
 # Smart Contract Design
 
+> **Implemented: `EvidenceAnchor`** (commitments to sealed evidence) in `contracts/`, with 34 Foundry tests and a tested TypeScript client. See [../modules/evidence-service/ethereum-integration.md](../modules/evidence-service/ethereum-integration.md). **Not deployed.** The `AgentPermissionRegistry` described below remains a **proposal**: PostgreSQL stays the source of truth for permissions.
+
 **Status: planned (design).** The `contracts/` directory is empty. This proposal keeps the on-chain surface small, because contracts are costly to change and the registries stay authoritative for application state.
 
 ## Goals

@@ -13,6 +13,9 @@ Configuration comes from environment variables. Secrets never go in Git, `CLAUDE
 | `DISCOVERY_QUEUE` | API | unset (pg-boss) | `inline` runs discovery jobs in-process (local use, tests). Otherwise jobs go through pg-boss on `DATABASE_URL`, which creates its own `pgboss` schema |
 | `AGENT_TOKEN_SECRET` | API | unset | Signing key for agent tokens: hex or base64 of at least 32 random bytes. **Secret.** Unset disables agent authentication (503), except under `CORVEN_DEV_AUTH=1`, which uses an ephemeral key |
 | `ORCHESTRATOR_TICKER` | API | on | `off` disables the pg-boss schedule that drives incident-response workflows (they can still be run by `POST /workflows/:id/run`) |
+| `ETHEREUM_SEPOLIA_RPC_URL`, `ETHEREUM_CHAIN_ID` | `eth:verify` script, future server wiring | none | Sepolia endpoint (**secret**: embeds an API key) and `11155111`. Verified read-only; the server does not use them yet |
+| `ETHEREUM_SIGNER_PRIVATE_KEY` | future server wiring | none | Dedicated anchor-signer key (**secret**, testnet only, never mainnet). Not read by any code today |
+| `EVIDENCE_ANCHOR_CONTRACT_ADDRESS` | future server wiring, `eth:verify` | empty | Set only after an approved deployment |
 | `TEST_ADMIN_DATABASE_URL` | Tests | `postgres://corven:corven_local_only@127.0.0.1:54329/postgres` | Admin connection used to create and drop the throwaway test database |
 
 Local credentials in `docker-compose.yml` (`corven` / `corven_local_only`) are throwaways bound to `127.0.0.1`. They are not secrets and must never be reused anywhere.
