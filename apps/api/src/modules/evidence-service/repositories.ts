@@ -24,6 +24,13 @@ export class EvidenceRepository {
   async setStatus(tx: Executor, org: string, id: string, status: EvidenceStatus, verifiedAt?: Date): Promise<void> {
     await tx.update(t.evidenceRecords).set({ status, updatedAt: new Date(), ...(verifiedAt ? { lastVerifiedAt: verifiedAt } : {}) }).where(and(eq(t.evidenceRecords.organizationId, org), eq(t.evidenceRecords.id, id)));
   }
+  /** Evidence with submitted anchors, across organizations, for the background confirmation poll. */
+  async pendingAnchorEvidence(tx: Executor, limit = 50): Promise<EvidenceRow[]> {
+    const ids = await tx.selectDistinct({ id: t.evidenceAnchors.evidenceId, org: t.evidenceAnchors.organizationId }).from(t.evidenceAnchors).where(eq(t.evidenceAnchors.status, "submitted")).limit(limit);
+    const out: EvidenceRow[] = [];
+    for (const i of ids) { const r = await this.find(tx, i.org, i.id); if (r) out.push(r); }
+    return out;
+  }
   listAnchors(tx: Executor, org: string, evidenceId: string): Promise<AnchorRow[]> {
     return tx.select().from(t.evidenceAnchors).where(and(eq(t.evidenceAnchors.organizationId, org), eq(t.evidenceAnchors.evidenceId, evidenceId))).orderBy(asc(t.evidenceAnchors.target));
   }

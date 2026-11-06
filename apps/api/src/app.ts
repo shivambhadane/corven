@@ -14,6 +14,7 @@ import { createAuthorizationGateway, registerAuthorizationGateway, type GatewayH
 import { createApprovalService, registerApprovalService } from "./modules/approval-service/index.js";
 import { createVerificationService, registerVerificationService } from "./modules/verification-service/index.js";
 import { createEvidenceService, registerEvidenceService, type EvidenceConfig } from "./modules/evidence-service/index.js";
+import { createOrchestrator, registerOrchestrator } from "./modules/orchestrator/index.js";
 import { createIncidentManagement, registerIncidentManagement } from "./modules/incident-management/index.js";
 import { createGraphSnapshots, registerGraphSnapshots } from "./modules/graph-snapshot/index.js";
 import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
@@ -26,6 +27,8 @@ declare module "fastify" {
     approvals: ReturnType<typeof createApprovalService>;
     verification: ReturnType<typeof createVerificationService>;
     evidence: ReturnType<typeof createEvidenceService>;
+    orchestrator: ReturnType<typeof createOrchestrator>;
+    routeTable: Array<{ method: string; url: string; auth: string }>;
   }
   interface FastifyRequest {
     principal: Principal;
@@ -46,6 +49,7 @@ export interface BuildAppOptions {
   approvals?: ReturnType<typeof createApprovalService>;
   verification?: ReturnType<typeof createVerificationService>;
   evidence?: ReturnType<typeof createEvidenceService>;
+  orchestrator?: ReturnType<typeof createOrchestrator>;
   /** Arkiv/Ethereum clients and confirmation depth. Without clients, anchoring is unavailable (records are still sealed locally). */
   evidenceConfig?: EvidenceConfig;
   /** Clock for time-based rules (approval expiry and execution windows). Tests move it; production uses real time. */
@@ -70,6 +74,12 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   }).withTypeProvider<TypeBoxTypeProvider>();
 
   app.decorateRequest("principal");
+  // Every route that is registered, with how it authenticates. Used by the release audit test; carries no request data.
+  const routeTable: Array<{ method: string; url: string; auth: string }> = [];
+  app.addHook("onRoute", (r) => {
+    for (const method of Array.isArray(r.method) ? r.method : [r.method]) routeTable.push({ method, url: r.url, auth: (r.config as { auth?: string } | undefined)?.auth ?? "human" });
+  });
+  app.decorate("routeTable", routeTable);
 
   app.addHook("onRequest", async (req) => {
     if (req.url === "/health") return;
@@ -170,12 +180,20 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   await registerVerificationService(app, verification);
   const evidence = opts.evidence ?? createEvidenceService(opts.db, incidents, opts.evidenceConfig);
   await registerEvidenceService(app, evidence);
+  const orchestrator =
+    opts.orchestrator ??
+    createOrchestrator(opts.db, {
+      incidents: incidents.incidents, reader: incidents.reader, analysis: incidents.analysis, approvals: approvals.approvals, enforcement: gateway.enforcement,
+      gateway: gateway.gateway, verification: verification.verification, evidence: evidence.evidence,
+    }, opts.now);
+  await registerOrchestrator(app, orchestrator);
   // Exposed so trusted in-process modules (and tests) can use the service as the `system` principal. Never reachable over HTTP.
   app.decorate("incidentManagement", incidents);
   app.decorate("gateway", gateway);
   app.decorate("approvals", approvals);
   app.decorate("verification", verification);
   app.decorate("evidence", evidence);
+  app.decorate("orchestrator", orchestrator);
   const discovery = opts.discovery ?? createDependencyDiscovery(opts.db, registry.repo, dependencyRegistry, opts.discoveryQueue);
   await registerDependencyDiscovery(app, discovery);
   await discovery.start();

@@ -1341,3 +1341,64 @@ export const evidenceVerificationLogs = pgTable(
     index("evidence_verification_logs_idx").on(t.organizationId, t.evidenceId, t.createdAt),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Incident-response orchestration
+// ---------------------------------------------------------------------------
+
+/**
+ * One durable workflow per incident. The row IS the work item: `next_run_at`, `lease_until`, `attempts`
+ * and `last_error` make it a retryable job that survives restarts. The step is informational; every
+ * run re-derives what to do from the real state of the incident, approval, enforcement and verification.
+ */
+export const incidentWorkflows = pgTable(
+  "incident_workflows",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    status: varchar("status", { length: 16 }).notNull().default("running"),
+    step: varchar("step", { length: 24 }).notNull().default("analysis"),
+    outcome: varchar("outcome", { length: 40 }),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(5),
+    lastError: text("last_error"),
+    nextRunAt: timestamp("next_run_at", { withTimezone: true }).notNull().defaultNow(),
+    leaseUntil: timestamp("lease_until", { withTimezone: true }),
+    approvalRequested: boolean("approval_requested").notNull().default(false),
+    evidenceId: uuid("evidence_id"),
+    verificationAttempts: integer("verification_attempts").notNull().default(0),
+    startedBy: uuid("started_by").notNull(),
+    startedByType: varchar("started_by_type", { length: 8 }).notNull(),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [
+    unique("incident_workflows_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({ name: "incident_workflows_incident_fk", columns: [t.incidentId, t.organizationId], foreignColumns: [incidents.id, incidents.organizationId] }).onDelete("restrict"),
+    uniqueIndex("incident_workflows_one_per_incident").on(t.organizationId, t.incidentId),
+    index("incident_workflows_due_idx").on(t.status, t.nextRunAt),
+    check("incident_workflows_status_check", sql`${t.status} in ('running','waiting','completed','stopped','blocked','failed','cancelled')`),
+  ],
+);
+
+/** Append-only log of what the workflow did and why it stopped. */
+export const workflowEvents = pgTable(
+  "workflow_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity(),
+    organizationId: uuid("organization_id").notNull(),
+    workflowId: uuid("workflow_id").notNull(),
+    type: varchar("type", { length: 40 }).notNull(),
+    detail: jsonb("detail").notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ name: "workflow_events_workflow_fk", columns: [t.workflowId, t.organizationId], foreignColumns: [incidentWorkflows.id, incidentWorkflows.organizationId] }).onDelete("restrict"),
+    index("workflow_events_idx").on(t.organizationId, t.workflowId, t.seq),
+  ],
+);

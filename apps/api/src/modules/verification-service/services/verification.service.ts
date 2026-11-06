@@ -107,11 +107,21 @@ export class VerificationService {
     return this.repo.listForIncident(this.db, p.organizationId, incidentId);
   }
 
-  /** Retries incident updates that failed after a run completed. Idempotent. */
-  async runMaintenance(): Promise<{ reconciled: number }> {
+  /**
+   * Retries incident updates that failed after a run completed, and closes runs a crash left
+   * `pending` or `running`: they become `inconclusive` ("interrupted"), which unblocks the
+   * incident for a retry and is never mistaken for containment. Idempotent.
+   */
+  async runMaintenance(staleAfterMs = 10 * 60_000, now: Date = new Date()): Promise<{ reconciled: number; interrupted: number }> {
+    let interrupted = 0;
+    for (const r of await this.repo.staleActive(this.db, new Date(now.getTime() - staleAfterMs))) {
+      const summary = { ...((r.summary as object | null) ?? {}), counts: aggregate([]).counts, error: "The run was interrupted before it finished", limitations: [], notChecked: [] };
+      await this.repo.updateRun(this.db, r.organizationId, r.id, { status: "inconclusive", completedAt: now, resultHash: canonicalHash([]), summary: summary as never });
+      interrupted++;
+    }
     let reconciled = 0;
     for (const r of await this.repo.unsynced(this.db)) if (await this.syncIncident(r, {})) reconciled++;
-    return { reconciled };
+    return { reconciled, interrupted };
   }
 
   // ------------------------------------------------------------------ run

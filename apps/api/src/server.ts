@@ -2,6 +2,7 @@ import { buildApp } from "./app.js";
 import { devHeaderAuthenticator, failClosedAuthenticator } from "./auth/dev-auth.js";
 import { randomBytes } from "node:crypto";
 import { createDb } from "./db/client.js";
+import { PgBossTicker } from "./modules/orchestrator/index.js";
 import { defaultAgentAuthConfig } from "./modules/authorization-gateway/index.js";
 import { InlineJobQueue, PgBossJobQueue } from "./modules/dependency-discovery/jobs/queue.js";
 
@@ -43,6 +44,14 @@ const app = await buildApp({
 if (devAuth) app.log.warn("DEVELOPMENT AUTH ENABLED: request headers are trusted. Never use this in production.");
 else app.log.warn("No production authenticator is configured: all API requests will receive 401.");
 if (!tokenSecret) app.log.warn("AGENT_TOKEN_SECRET is not set: agent authentication is disabled.");
+
+// The incident-response workflow is driven by a pg-boss schedule. ORCHESTRATOR_TICKER=off leaves it to manual
+// POST /workflows/:id/run calls (useful when debugging a single workflow).
+if (process.env.ORCHESTRATOR_TICKER !== "off") {
+  const ticker = new PgBossTicker(databaseUrl, app.orchestrator.orchestrator, (e) => app.log.error({ err: e }, "orchestrator ticker error"));
+  await ticker.start();
+  app.addHook("onClose", async () => void (await ticker.stop()));
+}
 
 const port = Number(process.env.PORT ?? 3001);
 await app.listen({ port, host: "127.0.0.1" });

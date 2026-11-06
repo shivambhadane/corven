@@ -27,6 +27,9 @@ export class VerificationRepository {
   async listForIncident(tx: Executor, org: string, incidentId: string): Promise<RunRow[]> {
     return (await tx.select().from(t.verificationRuns).where(and(eq(t.verificationRuns.organizationId, org), eq(t.verificationRuns.incidentId, incidentId))).orderBy(desc(t.verificationRuns.createdAt), desc(t.verificationRuns.id))) as RunRow[];
   }
+  async staleActive(tx: Executor, olderThan: Date, limit = 100): Promise<RunRow[]> {
+    return (await tx.select().from(t.verificationRuns).where(and(sql`${t.verificationRuns.status} in ('pending','running')`, sql`${t.verificationRuns.updatedAt} < ${olderThan}`)).limit(limit)) as RunRow[];
+  }
   async unsynced(tx: Executor, limit = 100): Promise<RunRow[]> {
     return (await tx.select().from(t.verificationRuns).where(and(sql`${t.verificationRuns.status} in ('passed','failed','partially_verified','inconclusive')`, eq(t.verificationRuns.incidentSynced, false))).limit(limit)) as RunRow[];
   }

@@ -229,6 +229,21 @@ export class EvidenceService {
     return { record: (await this.repo.find(this.db, p.organizationId, id))!, anchors: r.rows, steps: r.steps };
   }
 
+  /** Polls Ethereum confirmations for evidence with submitted anchors. Safe to repeat. */
+  async runMaintenance(): Promise<{ refreshed: number }> {
+    let refreshed = 0;
+    for (const r of await this.repo.pendingAnchorEvidence(this.db)) {
+      try {
+        const x = await this.refreshAnchors(r);
+        await this.syncStatus(r, x.rows);
+        refreshed++;
+      } catch {
+        /* the next poll tries again */
+      }
+    }
+    return { refreshed };
+  }
+
   private async syncStatus(record: EvidenceRow, anchors: AnchorRow[]) {
     const cur = (await this.repo.find(this.db, record.organizationId, record.id))!;
     if (cur.status === "invalid" || anchors.length === 0) return;
