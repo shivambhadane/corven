@@ -16,6 +16,8 @@ Failures roll everything back (tested by injecting failures into the audit, vers
 
 ## Planned: background processing and events
 
+_Note: Phase 2 modules (incidents, gateway, approval, verification, evidence) are implemented. They record their facts synchronously in their own tables and on the incident timeline; there is still no event bus or outbox._
+
 Discovery and integration retries run as pg-boss jobs over PostgreSQL. Suggested internal events:
 
 ```text

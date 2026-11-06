@@ -24,6 +24,8 @@ Source: `apps/api/src/db/schema.ts` (Drizzle) and the SQL in `apps/api/drizzle/`
 | `0015_approval_append_only` | Frozen binding, final status, append-only decisions and audit | `down/0015_…` |
 | `0016_verification_service` | `verification_runs`, `verification_checks` | `down/0016_…` |
 | `0017_verification_append_only` | Final-once runs, append-only checks | `down/0017_…` |
+| `0018_evidence_service` | `evidence_records`, `evidence_anchors`, `evidence_verification_logs` | `down/0018_…` |
+| `0019_evidence_append_only` | Frozen sealed content, final-once confirmed anchors, append-only logs | `down/0019_…` |
 
 Apply with `pnpm --filter @corven/api db:migrate` (needs `DATABASE_URL`). Drizzle Kit has no down migrations; the `down/` scripts are hand-written, destructive, and applied newest first. The migration test applies all up, all down, then up again.
 
@@ -135,6 +137,10 @@ See [../modules/approval-service/data-model.md](../modules/approval-service/data
 ## Verification Service
 
 `verification_runs` (incident, approval, plan reference and hash, snapshot hash, attempt, retry link, status, summary, result hash, incident outcome, sync flag; one active run per incident; final once) and `verification_checks` (append-only; category, purpose, target, expected, actual, result, detail, execution reference, limitation). See [../modules/verification-service/verification-model.md](../modules/verification-service/verification-model.md).
+
+## Evidence Service
+
+`evidence_records` (sealed canonical content, hash, sequence and chain link; only status moves; `invalid` terminal), `evidence_anchors` (one per target; confirmed is final), `evidence_verification_logs` (append-only). See [../modules/evidence-service/architecture.md](../modules/evidence-service/architecture.md).
 
 ## Append-only enforcement
 

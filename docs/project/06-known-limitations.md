@@ -42,7 +42,7 @@ The product must distinguish planned, approved, submitted, executed and verified
 | Authorization & Enforcement Gateway | Built. Executors simulated; no on-chain adapter; no enforcement for authority or operational edges; no mTLS or rate limiting; symmetric token key; approval check is a port until the Approval Service exists |
 | Approval Service | Built. Approver identity comes from the development authenticator; approvals are not signed; no notifications; the expiry/reconciliation sweep is not scheduled yet (also applied lazily) |
 | Verification Service | Built. Probes use simulated executors; negative tests show only what the gateway allows; path checks cover only registered dependencies; runs are synchronous and a crash leaves a `running` row that must be cleared |
-| Evidence | Not built; design only |
+| Evidence Service | Built. **Arkiv: no client, test double only. Ethereum: read-side JSON-RPC client untested against a node; transaction submission/signing not built. ENS: no live resolution.** Records are hashed and chained but not signed. Anchoring and confirmation polling are manual calls. |
 | Contracts, ENS, Arkiv, Chainlink CRE | Not built; sponsor technologies not yet reviewed in detail |
 | Dashboard | Not built; static landing page only |
 | Operations | Health check does not touch the database; no metrics or alerting; no cloud deployment |

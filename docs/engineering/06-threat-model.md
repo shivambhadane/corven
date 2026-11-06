@@ -53,6 +53,9 @@ External attacker with network access; malicious or compromised tenant user; com
 | T18 | Race: concurrent status changes | Row lock; exactly one wins (tested) | Built |
 | T19 | Unauthenticated runtime events accepted as evidence | Unique event ids, redaction, 0.65 confidence for attempted/denied and human review below 0.8. Producer authentication and signatures | **Partly built.** Ingestion needs `discovery:ingest` (human roles today); event authenticity is planned with the gateway |
 | T20 | A false "contained" status | Distinct planned/approved/submitted/executed/verified states; `contained` only from a fully passed verification run; partial and inconclusive are never full containment; checks observe the live gateway and pinned graph, not enforcement's report | Built, tested (probes use simulated executors) |
+| T20a | Tampering: evidence altered after sealing, or a source record changed to match it | Canonical hash, per-incident hash chain, comparison with append-only sources, optional external anchors; invalid is terminal | Built, tested; records are not signed, and an unanchored record altered together with its hash is caught only by the source comparison |
+| T20b | Disclosure: sensitive text in published evidence | Free text replaced by hashes; only a hash and identifiers are anchored; secrets never read | Built, tested |
+| T20c | Claiming anchoring that did not happen | Submitted is not anchored; confirmed only after read-back / successful, hash-carrying, sufficiently confirmed transaction | Built against doubles; **not exercised against real Arkiv or Ethereum** |
 | T21 | Supply chain: malicious dependency | Lockfile, scanning in CI | **No CI yet** |
 | T22 | LLM manipulation influences decisions | LLM never approves, enforces or decides ownership | Policy; no LLM in the code |
 
