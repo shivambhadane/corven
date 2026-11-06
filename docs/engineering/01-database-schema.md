@@ -26,6 +26,8 @@ Source: `apps/api/src/db/schema.ts` (Drizzle) and the SQL in `apps/api/drizzle/`
 | `0017_verification_append_only` | Final-once runs, append-only checks | `down/0017_…` |
 | `0018_evidence_service` | `evidence_records`, `evidence_anchors`, `evidence_verification_logs` | `down/0018_…` |
 | `0019_evidence_append_only` | Frozen sealed content, final-once confirmed anchors, append-only logs | `down/0019_…` |
+| `0020_orchestration` | `incident_workflows`, `workflow_events` | `down/0020_…` |
+| `0021_orchestration_append_only` | Workflow identity guard, append-only events | `down/0021_…` |
 
 Apply with `pnpm --filter @corven/api db:migrate` (needs `DATABASE_URL`). Drizzle Kit has no down migrations; the `down/` scripts are hand-written, destructive, and applied newest first. The migration test applies all up, all down, then up again.
 
@@ -141,6 +143,10 @@ See [../modules/approval-service/data-model.md](../modules/approval-service/data
 ## Evidence Service
 
 `evidence_records` (sealed canonical content, hash, sequence and chain link; only status moves; `invalid` terminal), `evidence_anchors` (one per target; confirmed is final), `evidence_verification_logs` (append-only). See [../modules/evidence-service/architecture.md](../modules/evidence-service/architecture.md).
+
+## Orchestration
+
+`incident_workflows` (one per incident; the row is the work item: step, status, lease, retry state) and `workflow_events` (append-only). See [../modules/orchestration/workflow.md](../modules/orchestration/workflow.md).
 
 ## Append-only enforcement
 

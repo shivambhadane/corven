@@ -7,13 +7,13 @@ Documentation-first and module by module, with core graph analysis and containme
 | Phase | Scope | State |
 |---|---|---|
 | 1. Product and architecture | PRD, use cases, scope, domain and graph model, service boundaries, threat model | Done as documents (this folder); C4 model in IcePanel |
-| 2. Core backend | Agent registry, dependency registry, graph engine, incident management, blast radius, containment | Registries and graph **done**; incident, blast radius, containment **not started** |
-| 3. Enforcement | Gateway, permission evaluation, approval, revocation, verification | Not started |
-| 4. Blockchain integrations | Solidity contracts, Sepolia, ENS, Arkiv, Chainlink CRE (if feasible) | Not started |
+| 2. Core backend | Agent registry, dependency registry, graph engine, incident management, blast radius, containment | **Done** (Phase 1 engines and Incident Management) |
+| 3. Enforcement | Gateway, permission evaluation, approval, revocation, verification | **Done** with simulated resource executors; orchestration connects the modules |
+| 4. Blockchain integrations | Solidity contracts, Sepolia, ENS, Arkiv, Chainlink CRE (if feasible) | Not started. Evidence anchoring exists behind interfaces with test doubles; no contract, signer, Arkiv client or live ENS resolution |
 | 5. Evidence and dashboard | Evidence generation and verification, graph UI, incident UI, approval UI, evidence viewer | Not started (landing page done) |
 | 6. Deployment and validation | Docker, AWS, Vercel, database, CI/CD, security testing, end-to-end demo | Not started (local Docker Compose only) |
 
-Discovery, graph snapshots, the Blast-Radius Engine and the Containment Engine are implemented and tested (502 tests). Phase 2 (incidents, gateway, approval, verification, evidence) is next.
+Discovery, graph snapshots, the Blast-Radius Engine and the Containment Engine are implemented and tested (502 tests). Phase 2 (incident management, gateway, approval, verification, evidence, orchestration) is implemented and tested (see the module documents); what remains is real integrations (resource executors, Arkiv, Ethereum signing, live ENS), real human authentication, and a dashboard.
 
 ## Completed so far
 

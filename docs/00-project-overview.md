@@ -30,6 +30,7 @@ The central differentiator is not detecting or disabling a compromised agent. It
 | Approval Service | Built and tested |
 | Verification Service | Built and tested; probes use simulated executors |
 | Evidence Service | Built and tested; Arkiv and Ethereum anchoring are interfaces with test doubles |
+| Incident-response orchestration | Built and tested ([modules/orchestration](modules/orchestration/README.md)) |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built |
 | Dashboard | Not built. A static landing page exists in `apps/landing` |
 | Authentication | **Development-only adapter.** No real authentication or organizations yet |

@@ -32,7 +32,7 @@ Until real authentication exists the API must not be reachable from outside a de
 | `resource:write` | ✓ | ✓ | | |
 | `graph:read` | ✓ | ✓ | ✓ | ✓ |
 
-Later modules add (see each module's docs): `incident:*`, `gateway:read`, `permission:read/write`, `credential:manage`, `enforcement:read/apply`, and `approval:read` (all human roles), `approval:request` (admin, operator), `approval:decide` (admin, **approver**), `approval:policy` (admin), `verification:read` (all human roles), `verification:run` (admin, operator, system), `evidence:read` (all human roles), `evidence:generate` and `evidence:verify` (admin, operator, system), `evidence:anchor` (admin, system). The `approver` role has read access plus `approval:decide` only.
+Later modules add (see each module's docs): `incident:*`, `gateway:read`, `permission:read/write`, `credential:manage`, `enforcement:read/apply`, and `approval:read` (all human roles), `approval:request` (admin, operator), `approval:decide` (admin, **approver**), `approval:policy` (admin), `verification:read` (all human roles), `verification:run` (admin, operator, system), `evidence:read` (all human roles), `evidence:generate` and `evidence:verify` (admin, operator, system), `evidence:anchor` (admin, system), `workflow:read` (all human roles), `workflow:run` (admin, operator, system). The `approver` role has read access plus `approval:decide` only.
 
 The `system` role belongs to internal modules. HTTP authenticators only ever return human roles, and a test asserts `x-dev-role: system` is rejected.
 

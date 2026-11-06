@@ -16,7 +16,7 @@ Failures roll everything back (tested by injecting failures into the audit, vers
 
 ## Planned: background processing and events
 
-_Note: Phase 2 modules (incidents, gateway, approval, verification, evidence) are implemented. They record their facts synchronously in their own tables and on the incident timeline; there is still no event bus or outbox._
+_Note: Phase 2 modules and the orchestrator are implemented. Facts are recorded synchronously in each module's tables and on the incident timeline, and the orchestrator is driven by a durable workflow table plus a pg-boss tick; there is still no external event bus. See [../modules/orchestration/events.md](../modules/orchestration/events.md)._
 
 Discovery and integration retries run as pg-boss jobs over PostgreSQL. Suggested internal events:
 

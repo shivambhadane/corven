@@ -121,6 +121,10 @@ Full reference: [../modules/verification-service/api.md](../modules/verification
 
 Full reference: [../modules/evidence-service/api.md](../modules/evidence-service/api.md).
 
+## Workflows (`/workflows`)
+
+See [../modules/orchestration/api.md](../modules/orchestration/api.md).
+
 ## Status codes
 
 200, 201 as above; 400 validation and over-limit requests; 401 unauthenticated; 403 forbidden; 404 not found or in another organization; 409 conflicts and invalid transitions; 422 relationship rule violations; 500 generic. The full code catalog is in [08-error-handling.md](08-error-handling.md).
