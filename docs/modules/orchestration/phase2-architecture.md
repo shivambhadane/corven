@@ -54,7 +54,7 @@ sequenceDiagram
 
 | Boundary | Rule |
 |---|---|
-| People | Development authenticator today (Firebase not built). Roles decide who may request, approve, enforce, anchor |
+| People | Firebase sign-in (see docs/saas/07-human-authentication.md); development authenticator for local use. Roles decide who may request, approve, enforce, anchor |
 | Internal modules | The `system` principal, unobtainable over HTTP. Each module uses a fixed audit identity |
 | Agents | Machine tokens only; never a human or wallet credential |
 | Evidence and anchors | Content never leaves CORVEN; only a hash and identifiers are anchored |

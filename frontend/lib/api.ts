@@ -94,10 +94,14 @@ export interface ChainConfig {
   zk?: { enabled: boolean; models: Record<string, { input_scale: number; verifier: Address | null }> };
 }
 
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) throw new Error(`${url} -> ${response.status}`);
-  return response.json() as Promise<T>;
+async function getJson<T>(url: string): Promise<T | null> {
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return null;
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
 }
 
 export interface ModelInfo {

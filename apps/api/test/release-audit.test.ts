@@ -15,17 +15,27 @@ describe("release audit: authentication on every route", () => {
     const t = ctx.app.routeTable;
     expect(t.length).toBeGreaterThan(150);
     expect(t.filter((r) => r.auth === "agent").map((r) => r.url).sort()).toEqual(["/api/v1/gateway/check", "/api/v1/gateway/execute"]);
-    expect(t.filter((r) => r.auth === "public").map((r) => r.url)).toEqual(["/api/v1/agent-auth/token"]);
+    expect(t.filter((r) => r.auth === "public" && r.method !== "HEAD").map((r) => r.url).sort()).toEqual(["/api/v1/agent-auth/token", "/api/v1/auth/config", "/api/v1/demo/sessions"]);
+    // Signed-in-person routes that run before an organization exists. Anything added here needs a deliberate review.
+    expect(t.filter((r) => r.auth === "user" && r.method !== "HEAD").map((r) => `${r.method} ${r.url}`).sort()).toEqual(["GET /api/v1/me", "POST /api/v1/me/invitations/:id/accept", "POST /api/v1/me/invitations/:id/decline", "POST /api/v1/me/organizations"]);
   });
 
   it("every human route rejects an unauthenticated request with 401 before doing anything", async () => {
-    const human = ctx.app.routeTable.filter((r) => r.auth === "human" && r.url !== "/health" && r.method !== "HEAD" && r.method !== "OPTIONS");
+    const human = ctx.app.routeTable.filter((r) => r.auth === "human" && !r.url.startsWith("/health") && r.method !== "HEAD" && r.method !== "OPTIONS");
     const failures: string[] = [];
     for (const r of human) {
       const res = await ctx.app.inject({ method: r.method as "GET", url: fill(r.url), payload: r.method === "GET" || r.method === "DELETE" ? undefined : {} });
       if (res.statusCode !== 401) failures.push(`${r.method} ${r.url} -> ${res.statusCode}`);
     }
     expect(failures).toEqual([]);
+  });
+
+  it("signed-in-person routes reject an unauthenticated request, including development headers", async () => {
+    const dev = { "x-dev-actor-id": randomUUID(), "x-dev-org-id": randomUUID(), "x-dev-role": "admin" };
+    for (const [method, url] of [["GET", "/api/v1/me"], ["POST", "/api/v1/me/organizations"]] as const) {
+      expect((await ctx.app.inject({ method, url, payload: method === "POST" ? { name: "Acme" } : undefined })).statusCode, url).toBe(401);
+      expect((await ctx.app.inject({ method, url, headers: dev, payload: method === "POST" ? { name: "Acme" } : undefined })).statusCode, url).toBe(401);
+    }
   });
 
   it("agent routes reject missing, malformed and human credentials", async () => {

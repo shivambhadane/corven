@@ -4,12 +4,8 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CORVEN — 24/7 Blast-Radius Containment for Autonomous AI Agents",
-  description:
-    "Adaptive incident isolation without breaking innocent workflows. CORVEN discovers agent dependencies, maps blast radius, and cuts attack paths before breaches spread.",
-  icons: {
-    icon: "/favicon.svg",
-  },
+  title: { default: "CORVEN — Incident Response for Autonomous AI", template: "%s · CORVEN" },
+  description: "Infrastructure for Trusted Autonomous Systems: dependency-aware containment, real-time blast-radius calculation, and cryptographic evidence for AI agents.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

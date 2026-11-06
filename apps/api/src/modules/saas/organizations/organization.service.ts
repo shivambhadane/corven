@@ -122,7 +122,8 @@ export class OrganizationService {
       organizationId: principal.organizationId,
       email,
       role: input.role,
-      status: "active",
+      // Access starts only when the invited person signs in with this verified address and accepts.
+      status: "invited",
     });
 
     return toMemberDto(created);

@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import { failClosedAuthenticator } from "../src/auth/dev-auth.js";
+import { defaultEvidenceConfig } from "../src/modules/evidence-service/index.js";
+import { defaultAgentAuthConfig, ResourceExecutors } from "../src/modules/authorization-gateway/index.js";
+import { InlineJobQueue } from "../src/modules/dependency-discovery/jobs/queue.js";
 import { client, createCtx, validAgent, who, type TestCtx } from "./helpers.js";
 
 let ctx: TestCtx;
@@ -60,7 +63,22 @@ describe("authentication boundary", () => {
   });
 
   it("health is public and unknown routes return a JSON 404 envelope", async () => {
-    expect((await ctx.app.inject({ method: "GET", url: "/health" })).statusCode).toBe(200);
+    const health = await ctx.app.inject({ method: "GET", url: "/health" });
+    expect(health.statusCode).toBe(200);
+    expect(health.json()).toEqual({ status: "ok" });
+
+    const live = await ctx.app.inject({ method: "GET", url: "/health/live" });
+    expect(live.statusCode).toBe(200);
+    expect(live.json()).toEqual({ status: "ok" });
+
+    const ready = await ctx.app.inject({ method: "GET", url: "/health/ready" });
+    expect(ready.statusCode).toBe(200);
+    expect(ready.json()).toEqual({ status: "ready" });
+
+    const readyQuery = await ctx.app.inject({ method: "GET", url: "/health?probe=readiness" });
+    expect(readyQuery.statusCode).toBe(200);
+    expect(readyQuery.json()).toEqual({ status: "ready" });
+
     const res = await api.get("/api/v1/nope", who("admin"));
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe("NOT_FOUND");
@@ -76,5 +94,38 @@ describe("authentication boundary", () => {
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().error.code).toBeDefined();
+  });
+
+  it("readiness probe returns 503 unready when database fails", async () => {
+    const brokenDb = {
+      ...ctx.handle.db,
+      execute: async () => {
+        throw new Error("connection terminated");
+      },
+    } as unknown as typeof ctx.handle.db;
+
+    const failingApp = await buildApp({
+      evidenceConfig: defaultEvidenceConfig(),
+      db: brokenDb,
+      authenticate: failClosedAuthenticator,
+      discoveryQueue: new InlineJobQueue(),
+      gatewayOptions: { agentAuth: defaultAgentAuthConfig(null), executors: new ResourceExecutors() },
+      logger: false,
+    });
+
+    const res = await failingApp.inject({ method: "GET", url: "/health/ready" });
+    expect(res.statusCode).toBe(503);
+    expect(res.json()).toEqual({ status: "unready" });
+
+    const queryRes = await failingApp.inject({ method: "GET", url: "/health?probe=readiness" });
+    expect(queryRes.statusCode).toBe(503);
+    expect(queryRes.json()).toEqual({ status: "unready" });
+
+    // Liveness remains ok even when DB is failing (ALB won't restart immediately if just unready)
+    const liveRes = await failingApp.inject({ method: "GET", url: "/health/live" });
+    expect(liveRes.statusCode).toBe(200);
+    expect(liveRes.json()).toEqual({ status: "ok" });
+
+    await failingApp.close();
   });
 });

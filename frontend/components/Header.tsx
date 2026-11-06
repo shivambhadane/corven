@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { WalletPanel } from "./WalletPanel";
+import { UserNav } from "./UserNav";
 
 export function Header() {
   return (
@@ -9,13 +9,14 @@ export function Header() {
       <div className="header-inner">
         <Link href="/" className="brand">
           <span className="brand-mark" aria-hidden="true" />
-          Agent Marketplace
+          CORVEN
         </Link>
         <nav className="header-nav" aria-label="Main">
-          <Link href="/marketplace">Jobs</Link>
-          <Link href="/#how">How it works</Link>
+          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/#how">Containment</Link>
+          <Link href="/#platform">Architecture</Link>
         </nav>
-        <WalletPanel />
+        <UserNav />
       </div>
     </header>
   );

@@ -18,12 +18,15 @@ CORVEN aims to identify the full impact of a compromised agent, calculate the sm
 ## Run it
 
 ```bash
-./run.sh          # PostgreSQL, install, migrate, build the console, start the API
+./run.sh          # PostgreSQL, install, migrate, build the web app, start the API
 #   landing page  http://127.0.0.1:3001/
-#   console       http://127.0.0.1:3001/console/   (Console / Login on the landing page)
+#   website       http://localhost:3000/         (frontend/, Next.js)
+#   live demo     http://localhost:3000/demo     (no account; isolated sandbox)
+#   log in        http://localhost:3000/login    (console after sign-in: /app)
+#   API           http://127.0.0.1:3001/api/v1/
 ./run.sh smoke    # in another terminal: end-to-end check of the whole flow
 ./run.sh check    # typecheck, lint, tests, contract tests
-./run.sh dev      # hot reload (console on :5173)
+./run.sh dev      # hot reload (API and website)
 ./run.sh stop     # stop PostgreSQL
 ```
 
@@ -111,8 +114,8 @@ Technology choices and integrations may evolve during implementation.
 | Incident-response orchestration            | Built and tested ([docs](docs/modules/orchestration/README.md)) |
 | Evidence Service                           | Built and tested; Arkiv integrated and tested on Rabdi; Ethereum contract and client tested locally, not deployed ([docs](docs/modules/evidence-service/README.md)) |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built                      |
-| Dashboard                                  | Not started (landing page: `apps/landing`) |
-| Authentication                             | **Development-only adapter**              |
+| Website (landing, demo, sign-in, console)  | Built: Next.js app in `frontend/`. Public guided demo at `/demo`, console at `/app` ([docs](docs/saas/08-demo-onboarding-integrations.md)) |
+| Authentication                             | Firebase sign-in (Google and email/password) built and tested against signed test tokens; needs your Firebase project to run for real. Development sign-in remains for local use |
 | CI and cloud deployment                    | Not started                               |
 
 Exact scope, limits and the roadmap: [docs/project/06-known-limitations.md](docs/project/06-known-limitations.md) and [docs/project/01-implementation-roadmap.md](docs/project/01-implementation-roadmap.md).
@@ -123,7 +126,7 @@ Exact scope, limits and the roadmap: [docs/project/06-known-limitations.md](docs
 corven/
 ├── apps/
 │   ├── api/            Fastify + TypeScript + Drizzle API (registries, graph engine, tests)
-│   └── landing/        Static landing page
+│   └── web/            React + Vite app: landing page, sign-in, operator console
 ├── contracts/          Reserved for Solidity/Foundry
 ├── docs/               Documentation (start at docs/00-project-overview.md)
 ├── docker-compose.yml  Local PostgreSQL

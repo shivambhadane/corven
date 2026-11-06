@@ -1508,3 +1508,29 @@ export const webhookDeliveries = pgTable(
     index("webhook_deliveries_org_idx").on(t.organizationId, t.webhookId, t.createdAt),
   ],
 );
+
+// ============================================================================
+// HUMAN IDENTITY (Firebase sign-in)
+// ============================================================================
+
+/**
+ * A person who signed in through Firebase. `id` is the CORVEN actor id (what appears in audit rows); the Firebase uid
+ * never leaves this table. Organization access is NOT stored here: it comes from organization_members, matched on the
+ * verified email, so removing a member removes access on their next request.
+ */
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    firebaseUid: varchar("firebase_uid", { length: 128 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    emailVerified: boolean("email_verified").notNull().default(false),
+    displayName: varchar("display_name", { length: 200 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("users_firebase_uid_unique").on(t.firebaseUid),
+    index("users_email_idx").on(sql`lower(${t.email})`),
+  ],
+);

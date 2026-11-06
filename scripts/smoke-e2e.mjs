@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * End-to-end smoke test against a RUNNING CORVEN (./run.sh), over HTTP, as the console does it:
- * landing and console are served, the demo network is created, a compromise is raised, the workflow analyses and
+ * the website and its pages are served, the demo network is created, a compromise is raised, the workflow analyses and
  * waits for a person, an approver approves the exact plan, the workflow enforces, verifies and seals evidence,
  * and the evidence is anchored on Arkiv (when configured). Prints no secrets. Exit code 0 only if everything passed.
  *
@@ -29,13 +29,21 @@ const put = (p, h, b) => call("PUT", `/api/v1${p}`, h, b);
 try {
   // 1. what a visitor sees
   ok((await call("GET", "/health")).json?.status === "ok", "API health");
-  const landing = await call("GET", "/", {});
-  ok(landing.status === 200 && /CORVEN/.test(landing.text), "landing page served at /");
-  ok(landing.text.includes('href="/console/"'), "landing page links to the console");
-  const consoleHtml = await call("GET", "/console/", {});
-  ok(consoleHtml.status === 200 && consoleHtml.text.includes('id="root"'), "console served at /console/");
-  const asset = consoleHtml.text.match(/src="(\/console\/assets\/[^"]+\.js)"/)?.[1];
-  ok(asset && (await call("GET", asset, {})).status === 200, "console bundle loads");
+  // the website (frontend/, Next.js) and its proxy to this API
+  const WEB = process.env.WEB_URL ?? "http://localhost:3000";
+  for (const route of ["/", "/login", "/dashboard", "/marketplace"]) {
+    const r = await fetch(`${WEB}${route}`).catch(() => null);
+    ok(r?.status === 200, `website serves ${route}`);
+  }
+  const proxied = await fetch(`${WEB}/api/v1/auth/config`).catch(() => null);
+  ok(proxied?.status === 200, "website proxies /api/v1 to the API");
+  const demo = await call("POST", "/api/v1/demo/sessions", {});
+  ok(demo.status === 201 && demo.json?.data?.agents?.length === 5, "public demo sandbox starts with the five Acme agents");
+  const integrations = await fetch(`${BASE}/api/v1/integrations`, { headers: { "x-corven-demo": demo.json?.data?.token ?? "" } }).then((r) => r.json()).catch(() => null);
+  ok(integrations?.data?.chainlinkCre?.state === "not_implemented", "integration status is reported honestly");
+  const cfg = await call("GET", "/api/v1/auth/config", {});
+  ok(cfg.status === 200 && typeof cfg.json?.data?.devAuth === "boolean", "public sign-in configuration is available");
+  ok((await fetch(`${BASE}/api/v1/me`)).status === 401, "/me refuses an unauthenticated request");
   ok((await fetch(`${BASE}/api/v1/incidents`)).status === 401, "API refuses unauthenticated requests");
 
   // 2. the demo network (same calls as the console's "Load demo network")
