@@ -206,7 +206,7 @@ export class EvidenceService {
           await this.repo.upsertAnchor(this.db, { organizationId: org, evidenceId: id, target, status: ok ? "confirmed" : "failed", anchoredHash: record.contentHash, externalReference: entityKey, error: ok ? null : "Read-back from Arkiv did not match the published hash" }, attempts);
         } else {
           const eth = this.cfg.ethereum!;
-          const { txHash } = await eth.submit(record.contentHash);
+          const { txHash } = await eth.submit(record.contentHash, { evidenceId: record.id, incidentId: record.incidentId, schemaVersion: record.schemaVersion, sequence: record.sequence });
           // Submitted is not anchored. It becomes confirmed only in refreshAnchors, after enough confirmations.
           await this.repo.upsertAnchor(this.db, { organizationId: org, evidenceId: id, target, status: "submitted", anchoredHash: record.contentHash, externalReference: txHash, chainId: eth.chainId, contractAddress: eth.contractAddress, requiredConfirmations: this.cfg.requiredConfirmations, confirmations: 0 }, attempts);
         }

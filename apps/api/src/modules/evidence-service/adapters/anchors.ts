@@ -12,6 +12,13 @@ export interface ArkivClient {
   fetch(entityKey: string): Promise<AnchorPayload | null>;
 }
 
+export interface AnchorRef {
+  evidenceId: string;
+  incidentId: string;
+  schemaVersion: number;
+  sequence: number;
+}
+
 export type TxState = "pending" | "mined" | "reverted" | "not_found";
 
 /**
@@ -23,7 +30,12 @@ export interface EthereumAnchorClient {
   readonly name: string;
   readonly chainId: number;
   readonly contractAddress: string | null;
-  submit(contentHash: string): Promise<{ txHash: string }>;
+  /**
+   * `ref` carries the public identifiers a contract call needs (the evidence and incident ids,
+   * schema version and chain position). Clients that only put the hash in transaction data may ignore it.
+   * Must not send a second transaction for an anchor that already exists on chain.
+   */
+  submit(contentHash: string, ref?: AnchorRef): Promise<{ txHash: string }>;
   status(txHash: string): Promise<{ state: TxState; blockNumber: number | null; confirmations: number; dataContainsHash: (hash: string) => boolean }>;
 }
 
@@ -54,7 +66,8 @@ export class InMemoryChain implements EthereumAnchorClient {
   head = 100;
   available = true;
   readonly txs = new Map<string, { data: string; block: number | null; reverted: boolean }>();
-  async submit(contentHash: string) {
+  async submit(contentHash: string, _ref?: AnchorRef) {
+    void _ref;
     if (!this.available) throw new Error("rpc unavailable");
     const txHash = `0x${randomBytes(32).toString("hex")}`;
     this.txs.set(txHash, { data: `0x${contentHash}`, block: null, reverted: false });
@@ -102,7 +115,8 @@ export class JsonRpcEthereumAnchor implements EthereumAnchorClient {
     private readonly fetchImpl: Fetch = globalThis.fetch as unknown as Fetch,
   ) {}
 
-  async submit(contentHash: string) {
+  async submit(contentHash: string, _ref?: AnchorRef) {
+    void _ref;
     if (!this.signer) throw new Error("No transaction signer is configured; CORVEN cannot submit anchor transactions");
     return { txHash: await this.signer(contentHash) };
   }

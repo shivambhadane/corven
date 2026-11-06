@@ -32,6 +32,8 @@ export interface TestCtx {
   /** In-memory stand-ins for Arkiv and an Ethereum node (test doubles, not integrations). */
   arkiv: InMemoryArkiv;
   chain: InMemoryChain;
+  /** The evidence config the app uses; tests can swap `ethereum` for a client talking to a local chain. */
+  evidenceConfig: ReturnType<typeof defaultEvidenceConfig>;
   close(): Promise<void>;
 }
 
@@ -71,6 +73,7 @@ export async function createCtx(repo?: AgentRepository, depRepo?: DependencyRepo
     approvedPlans,
     arkiv,
     chain,
+    evidenceConfig,
     close: async () => {
       await app.close();
       await handle.close();

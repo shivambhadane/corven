@@ -16,5 +16,6 @@ export async function registerEvidenceService(app: FastifyInstance, e: ReturnTyp
 export { defaultEvidenceConfig, EVIDENCE_ACTOR_ID } from "./services/evidence.service.js";
 export type { EvidenceConfig } from "./services/evidence.service.js";
 export { InMemoryArkiv, InMemoryChain, JsonRpcEthereumAnchor } from "./adapters/anchors.js";
-export type { ArkivClient, EthereumAnchorClient } from "./adapters/anchors.js";
+export type { AnchorRef, ArkivClient, EthereumAnchorClient } from "./adapters/anchors.js";
+export { EVIDENCE_ANCHOR_ABI, evidenceRef, incidentRef, ViemEthereumAnchor, type ViemAnchorConfig } from "./adapters/viem-ethereum.js";
 export * from "./types.js";
