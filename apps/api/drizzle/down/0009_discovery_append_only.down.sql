@@ -1,0 +1,4 @@
+DROP TRIGGER IF EXISTS discovery_reviews_no_truncate ON discovery_reviews;
+DROP TRIGGER IF EXISTS discovery_reviews_append_only ON discovery_reviews;
+DROP TRIGGER IF EXISTS discovery_results_no_truncate ON discovery_reconciliation_results;
+DROP TRIGGER IF EXISTS discovery_results_append_only ON discovery_reconciliation_results;
