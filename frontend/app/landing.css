@@ -1,0 +1,960 @@
+/*
+ * CORVEN Enterprise Landing Page (Maple Design) in Next.js frontend/
+ * High-contrast warm off-white canvas, vibrant Royal Blue (#0055ff) featured cards & accents,
+ * precision 4x2 crosshair logo grid, crisp isometric illustrations, and dark enterprise card.
+ */
+
+:root {
+  --canvas: #ffffff;
+  --surface: #f6f5f2;
+  --surface-alt: #f0eee9;
+  --card: #ffffff;
+  --ink: #111317;
+  --ink-2: #4a4f5c;
+  --ink-3: #757b89;
+  --hair: #e5e3dc;
+  --hair-strong: #d2cfc7;
+  --blue: #0055ff;
+  --blue-hover: #0043cc;
+  --blue-soft: rgba(0, 85, 255, 0.08);
+  --blue-glow: rgba(0, 85, 255, 0.25);
+  --on-blue: #ffffff;
+  --dark-bg: #101216;
+  --dark-card: #181b22;
+  --dark-hair: #262b36;
+  --ok: #10b981;
+  --crit: #ef4444;
+  --warn: #f59e0b;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 18px;
+  --r-xl: 26px;
+  --r-pill: 999px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.09);
+  --font: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+.corven-landing {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.corven-landing a { color: var(--blue); text-decoration: none; transition: opacity .15s; }
+.corven-landing a:hover { opacity: .88; }
+.corven-landing p { margin: 0; }
+.corven-landing h1, .corven-landing h2, .corven-landing h3, .corven-landing h4 {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+.corven-landing h1 { font-size: clamp(36px, 4.2vw, 54px); }
+.corven-landing h2 { font-size: clamp(28px, 3.2vw, 40px); }
+.corven-landing h3 { font-size: 22px; }
+.corven-landing h4 { font-size: 17px; }
+
+.corven-landing .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+.corven-landing .center { text-align: center; }
+
+/* 1. Announcement Bar */
+.corven-landing .top-bar {
+  background: var(--blue);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 8px 16px;
+  text-align: center;
+}
+.corven-landing .top-bar a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+/* 2. Navbar */
+.corven-landing .nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--hair);
+}
+.corven-landing .nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 70px;
+}
+.corven-landing .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.corven-landing .brand svg { width: 28px; height: 28px; }
+.corven-landing .nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.corven-landing .nav-link {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.corven-landing .nav-link:hover { color: var(--ink); }
+.corven-landing .nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.corven-landing .btn-login {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+  padding: 8px 14px;
+}
+.corven-landing .btn-primary {
+  background: var(--blue);
+  color: #ffffff !important;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+}
+.corven-landing .btn-primary:hover {
+  background: var(--blue-hover);
+  transform: translateY(-1px);
+}
+.corven-landing .btn-white {
+  background: #ffffff;
+  color: var(--blue) !important;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background .15s, transform .1s;
+}
+.corven-landing .btn-white:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+.corven-landing .btn-outline {
+  border: 1px solid var(--hair-strong);
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.corven-landing .btn-outline:hover {
+  background: var(--surface);
+  border-color: var(--ink);
+}
+
+/* 3. Hero Section */
+.corven-landing .hero {
+  padding: 70px 0 60px;
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+}
+.corven-landing .hero-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.corven-landing .hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: center;
+}
+.corven-landing .hero-subtitle {
+  font-size: 18px;
+  color: var(--ink-2);
+  margin: 18px auto 36px;
+  line-height: 1.5;
+  max-width: 660px;
+}
+.corven-landing .hero-art {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 200px;
+  height: auto;
+  pointer-events: none;
+  z-index: 1;
+}
+.corven-landing .hero-art-left { left: 0; }
+.corven-landing .hero-art-right { right: 0; }
+@media (max-width: 1100px) {
+  .corven-landing .hero-art { display: none; }
+}
+
+/* Interactive Input Card */
+.corven-landing .hero-input-card {
+  background: #ffffff;
+  border: 1px solid #d5e0ff;
+  border-radius: 18px;
+  padding: 18px 22px;
+  box-shadow: 0 16px 36px rgba(0, 85, 255, 0.08);
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: left;
+}
+.corven-landing .hero-input-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.corven-landing .hero-input-field {
+  width: 100%;
+  border: 1px solid #e1e7f5;
+  background: #fbfcfe;
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color .15s;
+}
+.corven-landing .hero-input-field:focus {
+  border-color: var(--blue);
+  background: #ffffff;
+}
+.corven-landing .hero-input-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+}
+.corven-landing .hero-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.corven-landing .hero-btn-action {
+  background: var(--blue);
+  color: #ffffff;
+  border: 0;
+  border-radius: var(--r-sm);
+  padding: 9px 18px;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.corven-landing .hero-btn-action:hover { background: var(--blue-hover); }
+
+/* 4. Ticker Ribbon */
+.corven-landing .metrics-ticker {
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+  background: #ffffff;
+  padding: 16px 0;
+}
+.corven-landing .ticker-items {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.corven-landing .ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.corven-landing .ticker-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--hair-strong);
+}
+
+/* 5. Customer Proof & 4x2 Logo Grid */
+.corven-landing .proof-section {
+  background: var(--surface);
+  padding: 80px 0;
+}
+.corven-landing .proof-grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 40px;
+  align-items: stretch;
+}
+.corven-landing .proof-narrative {
+  background: #ffffff;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-lg);
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.corven-landing .proof-narrative h3 {
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--ink);
+  font-weight: 600;
+}
+.corven-landing .proof-link {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--blue);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+}
+.corven-landing .logo-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: #ffffff;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.corven-landing .logo-box {
+  border-right: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+  padding: 26px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  text-align: center;
+  min-height: 110px;
+}
+.corven-landing .logo-box:nth-child(4n) { border-right: none; }
+.corven-landing .logo-box:nth-child(n+5) { border-bottom: none; }
+.corven-landing .logo-box-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.corven-landing .logo-box-subtitle {
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+@media (max-width: 900px) {
+  .corven-landing .proof-grid { grid-template-columns: 1fr; }
+  .corven-landing .logo-matrix { grid-template-columns: repeat(2, 1fr); }
+  .corven-landing .logo-box:nth-child(2n) { border-right: none; }
+  .corven-landing .logo-box:nth-child(n+7) { border-bottom: none; }
+}
+
+/* 6. Feature Split Section 1 */
+.corven-landing .split-section {
+  padding: 90px 0;
+  background: #ffffff;
+}
+.corven-landing .split-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+.corven-landing .split-text h2 { margin-bottom: 16px; }
+.corven-landing .split-text p.lead {
+  font-size: 17px;
+  color: var(--ink-2);
+  margin-bottom: 28px;
+  line-height: 1.55;
+}
+.corven-landing .split-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.corven-landing .split-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.corven-landing .check-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--blue-soft);
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Big Royal Blue Card with Incident Cards */
+.corven-landing .blue-card-container {
+  background: linear-gradient(135deg, #0055ff 0%, #0040cc 100%);
+  border-radius: var(--r-xl);
+  padding: 36px 30px;
+  box-shadow: 0 20px 45px rgba(0, 85, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.corven-landing .floating-card {
+  background: #ffffff;
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.corven-landing .floating-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.corven-landing .floating-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.corven-landing .floating-tag {
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.corven-landing .floating-tag.tag-crit { background: #fee2e2; color: #dc2626; }
+.corven-landing .floating-tag.tag-ok { background: #dcfce7; color: #16a34a; }
+.corven-landing .floating-tag.tag-blue { background: #e0e7ff; color: #3730a3; }
+.corven-landing .floating-card-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+@media (max-width: 900px) {
+  .corven-landing .split-container { grid-template-columns: 1fr; }
+}
+
+/* 7. Feature 3-Card Grid Section */
+.corven-landing .features-section {
+  background: var(--surface);
+  padding: 90px 0;
+}
+.corven-landing .section-header-split {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 48px;
+  gap: 32px;
+}
+.corven-landing .section-header-split h2 { max-width: 540px; }
+.corven-landing .section-header-split p {
+  max-width: 440px;
+  font-size: 16px;
+  color: var(--ink-2);
+}
+.corven-landing .three-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+.corven-landing .feature-card-item {
+  background: #ffffff;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-lg);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: transform .2s, box-shadow .2s;
+}
+.corven-landing .feature-card-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+.corven-landing .feature-card-art {
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.corven-landing .feature-card-art svg {
+  max-height: 100%;
+  width: auto;
+}
+.corven-landing .feature-card-link {
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--blue);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+@media (max-width: 900px) {
+  .corven-landing .section-header-split { flex-direction: column; align-items: flex-start; }
+  .corven-landing .three-cards-grid { grid-template-columns: 1fr; }
+}
+
+/* 8. Royal Blue Radar/Wave Feature Banner */
+.corven-landing .radar-banner {
+  background: linear-gradient(135deg, #0055ff 0%, #0044d6 100%);
+  border-radius: var(--r-xl);
+  padding: 48px 50px;
+  color: #ffffff;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  align-items: center;
+  gap: 40px;
+  box-shadow: 0 20px 50px rgba(0, 85, 255, 0.22);
+  margin: 60px 0;
+}
+.corven-landing .radar-col-left h3 {
+  font-size: 28px;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+.corven-landing .radar-col-left p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.corven-landing .radar-col-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.corven-landing .radar-col-center svg {
+  max-width: 240px;
+  height: auto;
+}
+.corven-landing .radar-col-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 20px;
+}
+.corven-landing .radar-col-right p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  line-height: 1.5;
+}
+@media (max-width: 900px) {
+  .corven-landing .radar-banner {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 36px 24px;
+  }
+  .corven-landing .radar-col-right {
+    align-items: center;
+    text-align: center;
+  }
+}
+
+/* 9. Integration Strip Section */
+.corven-landing .integration-section {
+  padding: 80px 0;
+  background: #ffffff;
+}
+.corven-landing .integration-ribbon {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-lg);
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.corven-landing .integration-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  flex-wrap: wrap;
+}
+.corven-landing .integration-logo-item {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.corven-landing .integration-pill {
+  background: #ffffff;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-pill);
+  padding: 6px 18px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* 10. Process Banner */
+.corven-landing .process-banner {
+  background: var(--blue);
+  border-radius: var(--r-xl);
+  padding: 60px 48px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 85, 255, 0.22);
+  margin: 60px 0;
+}
+.corven-landing .process-content {
+  position: relative;
+  z-index: 2;
+  max-width: 680px;
+  margin: 0 auto;
+  text-align: center;
+}
+.corven-landing .process-content h2 {
+  color: #ffffff;
+  margin-bottom: 24px;
+}
+.corven-landing .process-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+.corven-landing .process-steps li {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--r-md);
+  padding: 14px 20px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.corven-landing .process-steps li b { color: #ffffff; }
+
+/* 11. Enterprise Dark Card */
+.corven-landing .enterprise-section {
+  background: var(--surface);
+  padding: 90px 0;
+}
+.corven-landing .dark-enterprise-card {
+  background: var(--dark-bg);
+  border: 1px solid var(--dark-hair);
+  border-radius: var(--r-xl);
+  padding: 50px 48px;
+  color: #ffffff;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.25);
+}
+.corven-landing .dark-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  border-bottom: 1px solid var(--dark-hair);
+  padding-bottom: 24px;
+}
+.corven-landing .dark-card-header h2 { color: #ffffff; }
+.corven-landing .sla-dropdown {
+  background: var(--dark-card);
+  border: 1px solid var(--dark-hair);
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.corven-landing .dark-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 36px;
+}
+.corven-landing .dark-grid-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.corven-landing .dark-grid-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--r-sm);
+  background: var(--dark-card);
+  border: 1px solid var(--dark-hair);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue);
+}
+.corven-landing .dark-grid-item h4 { color: #ffffff; font-size: 18px; }
+.corven-landing .dark-grid-item p { color: #94a3b8; font-size: 14px; line-height: 1.5; }
+@media (max-width: 900px) {
+  .corven-landing .dark-card-grid { grid-template-columns: 1fr; }
+}
+
+/* 12. Partner Section */
+.corven-landing .partner-section {
+  padding: 90px 0;
+  background: #ffffff;
+}
+.corven-landing .partner-container {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 60px;
+  align-items: center;
+}
+.corven-landing .partner-left h2 { margin-bottom: 16px; }
+.corven-landing .partner-left p {
+  font-size: 16px;
+  color: var(--ink-2);
+  margin-bottom: 28px;
+  line-height: 1.55;
+}
+.corven-landing .partner-2x2-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.corven-landing .partner-grid-box {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: var(--r-md);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.corven-landing .partner-box-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid var(--hair);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue);
+  margin-bottom: 4px;
+}
+.corven-landing .partner-grid-box h4 { font-size: 15.5px; font-weight: 600; }
+.corven-landing .partner-grid-box p { font-size: 13px; color: var(--ink-3); line-height: 1.45; }
+@media (max-width: 900px) {
+  .corven-landing .partner-container { grid-template-columns: 1fr; }
+}
+
+/* 13. Research Banner */
+.corven-landing .research-banner {
+  background: linear-gradient(135deg, #0055ff 0%, #003db3 100%);
+  border-radius: var(--r-xl);
+  padding: 50px 48px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 20px 45px rgba(0, 85, 255, 0.22);
+  margin: 60px 0;
+}
+.corven-landing .research-info h3 { font-size: 28px; color: #ffffff; margin-bottom: 10px; }
+.corven-landing .research-info p { color: rgba(255, 255, 255, 0.85); font-size: 15.5px; max-width: 580px; }
+@media (max-width: 900px) {
+  .corven-landing .research-banner { flex-direction: column; align-items: flex-start; gap: 24px; }
+}
+
+/* 14. FAQ Section */
+.corven-landing .faq-section {
+  padding: 90px 0;
+  background: var(--surface);
+}
+.corven-landing .faq-section h2 { text-align: center; margin-bottom: 48px; }
+.corven-landing .faq-accordion {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.corven-landing .faq-item {
+  background: #ffffff;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.corven-landing .faq-question {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 20px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+.corven-landing .faq-question:hover { background: #fafafa; }
+.corven-landing .faq-icon {
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--blue);
+  transition: transform .2s;
+}
+.corven-landing .faq-item.open .faq-icon { transform: rotate(45deg); }
+.corven-landing .faq-answer {
+  display: none;
+  padding: 0 24px 20px;
+  font-size: 14.5px;
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+.corven-landing .faq-item.open .faq-answer { display: block; }
+
+/* 15. Bottom CTA Banner */
+.corven-landing .bottom-cta-banner {
+  background: var(--blue);
+  border-radius: var(--r-xl);
+  padding: 70px 48px;
+  text-align: center;
+  color: #ffffff;
+  box-shadow: 0 24px 50px rgba(0, 85, 255, 0.25);
+  margin: 70px 0;
+}
+.corven-landing .bottom-cta-banner h2 {
+  color: #ffffff;
+  font-size: clamp(30px, 3.5vw, 44px);
+  max-width: 640px;
+  margin: 0 auto 28px;
+}
+
+/* 16. Footer */
+.corven-landing .footer {
+  background: #ffffff;
+  border-top: 1px solid var(--hair);
+  padding: 70px 0 40px;
+}
+.corven-landing .footer-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 40px;
+  margin-bottom: 50px;
+}
+.corven-landing .footer-brand p { color: var(--ink-3); font-size: 13.5px; margin-top: 12px; }
+.corven-landing .newsletter-form {
+  margin-top: 20px;
+  display: flex;
+  gap: 8px;
+  max-width: 320px;
+}
+.corven-landing .newsletter-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--hair-strong);
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  outline: none;
+}
+.corven-landing .footer-col h5 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.corven-landing .footer-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.corven-landing .footer-col a { color: var(--ink-2); font-size: 14px; }
+.corven-landing .footer-col a:hover { color: var(--blue); }
+.corven-landing .footer-bottom {
+  border-top: 1px solid var(--hair);
+  padding-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+@media (max-width: 900px) {
+  .corven-landing .footer-grid { grid-template-columns: 1fr 1fr; }
+  .corven-landing .footer-bottom { flex-direction: column; gap: 16px; }
+}
