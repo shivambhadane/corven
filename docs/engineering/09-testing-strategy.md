@@ -29,6 +29,8 @@
 
 ## Performance (measured)
 
+Graph Engine testing in detail: [../modules/graph-engine/testing.md](../modules/graph-engine/testing.md).
+
 Graph Engine at 1,000 nodes and 5,000 edges on the development machine, one run: build 22 ms, BFS 8 ms, DFS 134 ms, reachability under 1 ms, bounded path search 5 ms, components 6 ms, cycles 48 ms, export 10 ms; end to end `POST /graph/build` about 116 ms server-side. These are single measurements, not guarantees; assertions in the tests are generous ceilings.
 
 ## Gaps

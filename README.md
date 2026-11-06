@@ -85,7 +85,7 @@ Technology choices and integrations may evolve during implementation.
 | Documentation (PRD, architecture, modules) | Written (see [docs/](docs/))              |
 | Agent Registry                             | Built and tested                          |
 | Dependency Registry                        | Built and tested                          |
-| Graph Engine                               | Built and tested                          |
+| Graph Engine                               | Built and tested ([docs](docs/modules/graph-engine/README.md)) |
 | Dependency Discovery                       | In progress (registry-side groundwork)    |
 | Incident Management                        | Designed, not built                       |
 | Blast-Radius and Containment engines       | Designed, not built                       |

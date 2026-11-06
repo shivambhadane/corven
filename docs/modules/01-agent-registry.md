@@ -177,7 +177,8 @@ Dev auth headers: `x-dev-actor-id` (uuid), `x-dev-org-id` (uuid), `x-dev-role` (
 
 ## Future integration points
 
-- **Dependency Registry / Graph Engine** read agents, capabilities and statuses via the repository/service.
+- **Dependency Registry** validates agent endpoints through `AgentRepository.findAgent` (organization-scoped).
+- **Graph Engine** (implemented, [graph-engine/](graph-engine/README.md)) reads all agents of an organization through `AgentRepository.listAll` inside one read-only transaction and turns each into a node. Agent status (`active`, `suspended`, `compromised`, `inactive`) is carried onto the node and available to graph filters; a `compromised` agent stays in the graph. Capabilities and identities are not used by the graph.
 - **Incident Management** will mark agents `compromised` through `AgentStatusService.changeStatus` with `incidentId`.
 - **Authorization Gateway** will consult status (`suspended`/`compromised` ⇒ deny); capabilities remain advisory input.
 - **ENS adapter** will call `recordVerification`.

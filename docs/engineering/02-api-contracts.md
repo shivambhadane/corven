@@ -59,7 +59,7 @@ Authority edges require `metadata.scope`; resource edges require `metadata.acces
 
 ## Graph (`/graph`)
 
-All read-only, require `graph:read`, rebuild the graph from the registries per request. Array filters use repeated parameters.
+Full reference with parameters, responses and errors: [../modules/graph-engine/api.md](../modules/graph-engine/api.md). All read-only, require `graph:read`, rebuild the graph from the registries per request. Array filters use repeated parameters.
 
 | Method | Path | Purpose |
 |---|---|---|

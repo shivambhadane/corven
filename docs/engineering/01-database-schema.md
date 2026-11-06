@@ -96,4 +96,4 @@ Indexes on `(org, source…)`, `(org, target…)`, `(org, dependency_type, statu
 
 ## What is not stored
 
-The dependency graph. It is derived on demand. See [modules/03-graph-engine.md](../modules/03-graph-engine.md).
+The dependency graph. It is derived on demand. See [modules/graph-engine/](../modules/graph-engine/README.md).

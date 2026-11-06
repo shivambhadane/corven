@@ -23,8 +23,9 @@ Controllers are thin, services own transactions, repositories own SQL, and rules
 |---|---|---|---|
 | 1 | Agent Registry | Built | [01-agent-registry](../modules/01-agent-registry.md) |
 | 2 | Dependency Registry | Built | [02-dependency-registry](../modules/02-dependency-registry.md) |
-| 3 | Graph Engine | Built | [03-graph-engine](../modules/03-graph-engine.md) |
-| – | Dependency Discovery | Partial | covered in 02-dependency-registry §16 and below |
+| 3 | Graph Engine | Built | [graph-engine/](../modules/graph-engine/README.md) (index: [03-graph-engine](../modules/03-graph-engine.md)) |
+| – | Dependency Discovery | Partial | covered in [02-dependency-registry](../modules/02-dependency-registry.md) §16 and below |
+| – | Graph Snapshot Service | Planned | described below; no document yet |
 | 4 | Incident Management | Planned | [04-incident-management](../modules/04-incident-management.md) |
 | 5 | Blast-Radius Engine | Planned | [05-blast-radius-engine](../modules/05-blast-radius-engine.md) |
 | 6 | Containment Engine | Planned | [06-containment-engine](../modules/06-containment-engine.md) |
@@ -35,14 +36,41 @@ Controllers are thin, services own transactions, repositories own SQL, and rules
 
 Numbering note: the PRD numbers the Graph Engine "Module 4"; the files under `modules/` follow the PRD's original ten-module list, where the graph is third.
 
+## Responsibility chain from registry to containment
+
+Each module owns one thing and depends only on those before it. Responsibilities are deliberately not merged.
+
+```mermaid
+flowchart LR
+  AR[Agent Registry] --> DR[Dependency Registry]
+  DD[Dependency Discovery] --> DR
+  AR --> GE[Graph Engine]
+  DR --> GE
+  GE --> GS[Graph Snapshot Service]
+  GS --> BR[Blast-Radius Engine]
+  BR --> CE[Containment Engine]
+```
+
+| Module | Owns | Does not do |
+|---|---|---|
+| Agent Registry | Authoritative agent inventory: identity references, lifecycle status, capabilities | Dependencies, graph structure |
+| Dependency Discovery (partial) | **Discovers and proposes** relationships from configurations, workflows and runtime events; normalization, resolution, reconciliation, review | Declare a relationship trusted; write dependency tables (it goes through `DependencyRegistryWriter`) |
+| Dependency Registry | **Stores canonical accepted** relationships with provenance, confidence, versions, evidence; validates every relationship | Discover relationships; build or query graphs |
+| Graph Engine | **Constructs and queries the structural graph** from canonical records; read-only | Write to registries; store graphs; classify impact; plan or enforce |
+| Graph Snapshot Service (planned) | **Stores immutable point-in-time graph versions** (from the Graph Engine's export) so an incident is analysed against a fixed graph | Build graphs itself; interpret them |
+| Blast-Radius Engine (planned) | **Analyzes potential impact** over a graph: compromised, exposed, potentially affected, healthy, uncertain | Plan or enforce |
+| Containment Engine (planned) | **Calculates minimum-safe containment actions** from impact, constraints and enforcement points | Enforce (the gateway does); approve (a human does) |
+
+Details of the built links: [Graph Engine](../modules/graph-engine/README.md) (position in CORVEN and interfaces), [Dependency Registry §16](../modules/02-dependency-registry.md).
+
 ## Interfaces between modules (implemented)
 
 | Interface | Provider | Consumer | Purpose |
 |---|---|---|---|
 | `AgentRegistryReader` | Agent Registry | Discovery (future), Gateway (future) | `getAgent`, `listAgents`, `findAgentByExternalReference`, `getCapabilities`, `validateAgentReference`. Organization-explicit, read-only |
 | `DependencyRegistryWriter` | Dependency Registry | Discovery | `createOrUpdate` (idempotent; created / updated / unchanged / rejected), `deactivate(reason)`, `findMatching`. Acts as the internal `system` principal |
-| `DependencyGraphDataProvider` | Dependency Registry | Graph consumers | `listActiveDependencies`, `getDependency`. Read-only |
-| `RegistryGraphInputProvider` | Graph Engine adapter | Graph Engine | One consistent read-only snapshot of agents, resources and dependencies |
+| `DependencyGraphDataProvider` | Dependency Registry | Read-only consumers needing active dependencies (none today; the Graph Engine does **not** use it) | `listActiveDependencies`, `getDependency` |
+| `RegistryGraphInputProvider` | Graph Engine adapter | Graph Engine | One consistent read-only snapshot (one `REPEATABLE READ` transaction) of agents, resources and dependencies of all statuses |
 | `GraphQueryService` | Graph Engine | HTTP layer, Blast-Radius, Containment, Snapshot | `build(organizationId)` and the pure query functions over an immutable `Graph` |
 
 ## Interfaces between modules (planned)

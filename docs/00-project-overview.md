@@ -57,7 +57,7 @@ Planned but not created: `apps/web` (dashboard), `packages/*`, `integrations/*`.
 |---|---|
 | `01-problem-statement`, `02-product-requirements`, `03-use-cases`, `04-mvp-scope` | Why, what, for whom, how much |
 | `architecture/` | System, container, module, deployment, data and security architecture; incident sequences |
-| `modules/` | One document per domain module (built modules describe the code; planned ones are designs) |
+| `modules/` | One document per domain module (built modules describe the code; planned ones are designs). The Graph Engine has its own folder: [modules/graph-engine/](modules/graph-engine/README.md) |
 | `engineering/` | Database schema, API contracts, event flow, authorization, contracts, threat model, evidence verification, errors, testing |
 | `integrations/` | Ethereum, ENS, Arkiv, Chainlink CRE designs |
 | `operations/` | Infrastructure plan, deployment, configuration, monitoring |

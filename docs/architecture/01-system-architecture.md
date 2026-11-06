@@ -51,6 +51,7 @@ flowchart TB
     IM[Incident Management]
     BR[Blast-Radius Engine]
     CE[Containment Engine]
+    GS[Graph Snapshot Service]
     AG[Authorization Gateway]
     AP[Approval Service]
     VE[Verification Service]
@@ -61,7 +62,8 @@ flowchart TB
   GE --> DR
   DD --> AR
   DD --> DR
-  BR --> GE
+  GS --> GE
+  BR --> GS
   CE --> BR
   CE --> GE
   IM --> BR
