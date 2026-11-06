@@ -16,6 +16,8 @@ Source: `apps/api/src/db/schema.ts` (Drizzle) and the SQL in `apps/api/drizzle/`
 | `0007_snapshot_append_only` | Triggers on `graph_snapshots` | `down/0007_…` |
 | `0008_dependency_discovery` | `discovery_sources`, `discovery_runs`, `discovery_observations`, `discovery_reconciliation_results`, `discovery_reviews`, `discovery_runtime_events` | `down/0008_…` |
 | `0009_discovery_append_only` | Triggers on reconciliation results and reviews | `down/0009_…` |
+| `0010_incident_management` | `incidents`, `incident_state_history`, `incident_events`, `incident_audit_logs`, `incident_agents`, `incident_resources`, `incident_assignments`, `incident_notes`, `incident_analysis_references` | `down/0010_…` |
+| `0011_incident_append_only` | Triggers on the eight incident history tables | `down/0011_…` |
 
 Apply with `pnpm --filter @corven/api db:migrate` (needs `DATABASE_URL`). Drizzle Kit has no down migrations; the `down/` scripts are hand-written, destructive, and applied newest first. The migration test applies all up, all down, then up again.
 
@@ -111,6 +113,10 @@ See [../modules/dependency-discovery.md](../modules/dependency-discovery.md) for
 - `discovery_runtime_events`: ingested gateway events, unique `(source_id, event_id)`, redacted payload, `consumed_run_id` so each event is read once.
 
 All carry `organization_id` with composite foreign keys.
+
+## Incident Management
+
+Tables, constraints and an ER diagram: [../modules/incident-management/data-model.md](../modules/incident-management/data-model.md). Only `incidents` is mutable; the other eight tables are append-only.
 
 ## Append-only enforcement
 

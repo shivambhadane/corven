@@ -88,7 +88,7 @@ Technology choices and integrations may evolve during implementation.
 | Graph Engine                               | Built and tested ([docs](docs/modules/graph-engine/README.md)) |
 | Graph Snapshots                            | Built and tested ([docs](docs/modules/graph-snapshot.md)) |
 | Dependency Discovery                       | Implemented (config, workflow, runtime sources; pg-boss queue) ([docs](docs/modules/dependency-discovery.md)) |
-| Incident Management                        | Designed, not built                       |
+| Incident Management                        | Built and tested ([docs](docs/modules/incident-management/README.md)) |
 | Blast-Radius and Containment engines       | Built and tested ([blast radius](docs/modules/05-blast-radius-engine.md), [containment](docs/modules/06-containment-engine.md)) |
 | Authorization Gateway, Approval, Verification | Designed, not built                    |
 | Evidence Service                           | Designed, not built                       |

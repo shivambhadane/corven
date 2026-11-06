@@ -38,7 +38,8 @@ The product must distinguish planned, approved, submitted, executed and verified
 | Dependency Discovery | Built for three source types with documents supplied inline; no live crawling or scheduling; runtime events are not authenticated as coming from a real gateway; confidence and the 0.8 threshold are policy values |
 | Graph Snapshots | Not signed or anchored; no retention or deletion policy; `incident_id` unvalidated |
 | Blast radius, containment | Built. Reachability is structural; inherited authority not modelled; workflow preservation sound but incomplete; plans are advisory and assume every edge is controllable until the gateway reports coverage |
-| Incident, gateway, approval, verification, evidence | Not built; designs only |
+| Incident Management | Built. No user or membership model (assignees are only UUID-checked); development auth only; analysis stored as verifiable references, not full results; no external event bus yet |
+| Gateway, approval, verification, evidence | Not built; designs only |
 | Contracts, ENS, Arkiv, Chainlink CRE | Not built; sponsor technologies not yet reviewed in detail |
 | Dashboard | Not built; static landing page only |
 | Operations | Health check does not touch the database; no metrics or alerting; no cloud deployment |

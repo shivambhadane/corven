@@ -101,6 +101,10 @@ Details: [../modules/graph-snapshot.md](../modules/graph-snapshot.md). `snapshot
 
 Sources, events, runs, observations, results, review and coverage. Full table with permissions: [../modules/dependency-discovery.md](../modules/dependency-discovery.md). `POST .../runs` returns 202 and the run executes in the background.
 
+## Incidents (`/incidents`)
+
+Full reference: [../modules/incident-management/api.md](../modules/incident-management/api.md). Lifecycle changes only through `POST /:incidentId/transition`; `PATCH` cannot change status. Analysis references (snapshot, blast radius, containment plan) are attached per incident and verifiable.
+
 ## Status codes
 
 200, 201 as above; 400 validation and over-limit requests; 401 unauthenticated; 403 forbidden; 404 not found or in another organization; 409 conflicts and invalid transitions; 422 relationship rule violations; 500 generic. The full code catalog is in [08-error-handling.md](08-error-handling.md).
@@ -111,4 +115,4 @@ No audit-log read endpoint, no hard delete, no identity-verification endpoint (i
 
 ## Planned APIs
 
-Incidents, approvals, verification and evidence are described in their module documents and are not implemented.
+Approvals, verification and evidence are described in their module documents and are not implemented.

@@ -32,6 +32,8 @@ External attacker with network access; malicious or compromised tenant user; com
 | T7c | Tampering: discovery grants authority | Discovery cannot create authority edges; entities are never created from observations | Built, tested |
 | T7d | Information disclosure: secrets in ingested events | Secret-looking fields redacted and payload size-limited before storage | Built, tested |
 | T7e | Tampering: containment plan wrongly reported as safe | Plan re-verified after the cut; checked against brute force; workflow preservation is sound but incomplete; plan is advisory and hash-bound for future approval | Built; approval binding planned |
+| T7f | Elevation: a person asserts approval, enforcement or containment on an incident | Those transitions are system-only; the system principal is unobtainable over HTTP | Built, tested |
+| T7g | Tampering: incident analysis refers to an altered graph | Snapshot pinned by id and hash, re-verified on use; results carry a reproducibility hash | Built, tested |
 | T8 | **Repudiation:** denying an action | Actor on every version, audit and status row; internal actor distinguishes automation | Built |
 | T9 | **Information disclosure:** cross-tenant read | Org scoping; 404 for foreign ids; composite FKs | Built, tested |
 | T10 | Disclosure: SQL or stack leakage in errors | Safe messages, generic 500, cause logged server-side only | Built, tested |

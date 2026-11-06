@@ -78,7 +78,7 @@ Checklist view of the roadmap. `[x]` done and tested, `[~]` partly done, `[ ]` n
 
 ## Incident Management, Gateway, Approval, Verification, Evidence
 
-- [ ] Incident state machine, tables, API
+- [x] Incident state machine, tables, API (done; see modules/incident-management)
 - [ ] Gateway placement decision; policy evaluator; enforcement adapters; fail-closed behavior
 - [ ] Approval bound to plan hash
 - [ ] Verification checks and honest results
