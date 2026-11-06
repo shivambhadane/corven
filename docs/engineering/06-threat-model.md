@@ -34,6 +34,10 @@ External attacker with network access; malicious or compromised tenant user; com
 | T7e | Tampering: containment plan wrongly reported as safe | Plan re-verified after the cut; checked against brute force; workflow preservation is sound but incomplete; plan is advisory and hash-bound for future approval | Built; approval binding planned |
 | T7f | Elevation: a person asserts approval, enforcement or containment on an incident | Those transitions are system-only; the system principal is unobtainable over HTTP | Built, tested |
 | T7g | Tampering: incident analysis refers to an altered graph | Snapshot pinned by id and hash, re-verified on use; results carry a reproducibility hash | Built, tested |
+| T7h | Spoofing: forged, stolen or replayed agent token | HS256 only with issuer/audience/expiry checks; credential row checked per request; rotation and revocation immediate; per-request idempotency | Built, tested (no mTLS, no rate limiting) |
+| T7i | Elevation: revoked access used by in-flight work | Re-check before execution; permission version for conditional execution | Built; residual millisecond window documented |
+| T7j | Bypass: the agent reaches the resource without the gateway | Coverage classification states what is and is not controlled; cannot be detected | Limitation, stated |
+| T7k | Enforcement claimed without effect | `executed` means local state only; verification requirements listed; unsupported actions recorded as such | Built |
 | T8 | **Repudiation:** denying an action | Actor on every version, audit and status row; internal actor distinguishes automation | Built |
 | T9 | **Information disclosure:** cross-tenant read | Org scoping; 404 for foreign ids; composite FKs | Built, tested |
 | T10 | Disclosure: SQL or stack leakage in errors | Safe messages, generic 500, cause logged server-side only | Built, tested |

@@ -105,6 +105,10 @@ Sources, events, runs, observations, results, review and coverage. Full table wi
 
 Full reference: [../modules/incident-management/api.md](../modules/incident-management/api.md). Lifecycle changes only through `POST /:incidentId/transition`; `PATCH` cannot change status. Analysis references (snapshot, blast radius, containment plan) are attached per incident and verifiable.
 
+## Gateway (`/agent-auth`, `/gateway`, `/permissions`, `/enforcement`)
+
+Full reference: [../modules/authorization-enforcement/api.md](../modules/authorization-enforcement/api.md). Agent routes authenticate with a machine token, not a human principal; enforcement is administrator-only over HTTP.
+
 ## Status codes
 
 200, 201 as above; 400 validation and over-limit requests; 401 unauthenticated; 403 forbidden; 404 not found or in another organization; 409 conflicts and invalid transitions; 422 relationship rule violations; 500 generic. The full code catalog is in [08-error-handling.md](08-error-handling.md).

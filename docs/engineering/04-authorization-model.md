@@ -1,6 +1,6 @@
 # Authorization Model
 
-This covers authorization of **people and internal actors using CORVEN's API**, which is built (apart from real authentication). Authorization of **agent operations** (the gateway) is planned: [modules/07-authorization-gateway.md](../modules/07-authorization-gateway.md).
+This covers authorization of **people and internal actors using CORVEN's API**, which is built (apart from real authentication). Authorization of **agent operations** (the gateway) is implemented: [modules/authorization-enforcement/](../modules/authorization-enforcement/README.md).
 
 ## Principal
 

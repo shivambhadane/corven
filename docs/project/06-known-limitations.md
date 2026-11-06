@@ -39,7 +39,8 @@ The product must distinguish planned, approved, submitted, executed and verified
 | Graph Snapshots | Not signed or anchored; no retention or deletion policy; `incident_id` unvalidated |
 | Blast radius, containment | Built. Reachability is structural; inherited authority not modelled; workflow preservation sound but incomplete; plans are advisory and assume every edge is controllable until the gateway reports coverage |
 | Incident Management | Built. No user or membership model (assignees are only UUID-checked); development auth only; analysis stored as verifiable references, not full results; no external event bus yet |
-| Gateway, approval, verification, evidence | Not built; designs only |
+| Authorization & Enforcement Gateway | Built. Executors simulated; no on-chain adapter; no enforcement for authority or operational edges; no mTLS or rate limiting; symmetric token key; approval check is a port until the Approval Service exists |
+| Approval, verification, evidence | Not built; designs only |
 | Contracts, ENS, Arkiv, Chainlink CRE | Not built; sponsor technologies not yet reviewed in detail |
 | Dashboard | Not built; static landing page only |
 | Operations | Health check does not touch the database; no metrics or alerting; no cloud deployment |

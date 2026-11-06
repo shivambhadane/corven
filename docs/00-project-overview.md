@@ -23,9 +23,11 @@ The central differentiator is not detecting or disabling a compromised agent. It
 |---|---|
 | Agent Registry | Built and tested |
 | Dependency Registry (typed dependencies, versions, evidence, internal writer) | Built and tested |
-| Graph Engine (immutable graph, traversal, paths, components, cycles) | Built and tested (on branch `feature/graph-engine` until merged) |
-| Dependency Discovery | In progress: registry-side groundwork only |
-| Incident Management, Blast-Radius, Containment, Gateway, Approval, Verification, Evidence | Designed in these docs, not built |
+| Graph Engine (immutable graph, traversal, paths, components, cycles) | Built and tested |
+| Dependency Discovery, Graph Snapshots, Blast-Radius, Containment | Built and tested |
+| Incident Management | Built and tested |
+| Authorization & Enforcement Gateway | Built and tested; resource executors simulated |
+| Approval, Verification, Evidence | Designed in these docs, not built |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built |
 | Dashboard | Not built. A static landing page exists in `apps/landing` |
 | Authentication | **Development-only adapter.** No real authentication or organizations yet |

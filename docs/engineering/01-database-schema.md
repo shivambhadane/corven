@@ -18,6 +18,8 @@ Source: `apps/api/src/db/schema.ts` (Drizzle) and the SQL in `apps/api/drizzle/`
 | `0009_discovery_append_only` | Triggers on reconciliation results and reviews | `down/0009_…` |
 | `0010_incident_management` | `incidents`, `incident_state_history`, `incident_events`, `incident_audit_logs`, `incident_agents`, `incident_resources`, `incident_assignments`, `incident_notes`, `incident_analysis_references` | `down/0010_…` |
 | `0011_incident_append_only` | Triggers on the eight incident history tables | `down/0011_…` |
+| `0012_authorization_gateway` | `agent_credentials`, `credential_rotation_history`, `permissions`, `resource_enforcement`, `gateway_audit_logs`, `gateway_decisions`, `execution_records`, `enforcement_actions`, `enforcement_action_events` | `down/0012_…` |
+| `0013_gateway_append_only` | Append-only and finalize-once guards | `down/0013_…` |
 
 Apply with `pnpm --filter @corven/api db:migrate` (needs `DATABASE_URL`). Drizzle Kit has no down migrations; the `down/` scripts are hand-written, destructive, and applied newest first. The migration test applies all up, all down, then up again.
 
@@ -117,6 +119,10 @@ All carry `organization_id` with composite foreign keys.
 ## Incident Management
 
 Tables, constraints and an ER diagram: [../modules/incident-management/data-model.md](../modules/incident-management/data-model.md). Only `incidents` is mutable; the other eight tables are append-only.
+
+## Authorization & Enforcement Gateway
+
+Tables, guards and ER diagram: [../modules/authorization-enforcement/data-model.md](../modules/authorization-enforcement/data-model.md).
 
 ## Append-only enforcement
 
