@@ -85,6 +85,20 @@
       "when": 1793949857898,
       "tag": "0011_incident_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793950921817,
+      "tag": "0012_authorization_gateway",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793950922860,
+      "tag": "0013_gateway_append_only",
+      "breakpoints": true
     }
   ]
 }

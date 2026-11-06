@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS enforcement_action_events;
+DROP TABLE IF EXISTS enforcement_actions;
+DROP TABLE IF EXISTS execution_records;
+DROP TABLE IF EXISTS gateway_decisions;
+DROP TABLE IF EXISTS gateway_audit_logs;
+DROP TABLE IF EXISTS resource_enforcement;
+DROP TABLE IF EXISTS permissions;
+DROP TABLE IF EXISTS credential_rotation_history;
+DROP TABLE IF EXISTS agent_credentials;

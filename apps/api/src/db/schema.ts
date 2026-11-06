@@ -806,3 +806,259 @@ export const incidentAnalysisReferences = pgTable(
     check("incident_analysis_refs_plan_check", sql`(${t.kind} = 'containment_plan') = (${t.planHash} is not null)`),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Authorization & Enforcement Gateway
+// ---------------------------------------------------------------------------
+
+/**
+ * Machine credential for one agent. Only a SHA-256 hash of the high-entropy
+ * secret is stored; the secret itself is shown once at issue time. At most one
+ * credential per agent is active (rotation revokes the previous one).
+ */
+export const agentCredentials = pgTable(
+  "agent_credentials",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
+    secretHash: varchar("secret_hash", { length: 64 }).notNull(),
+    status: varchar("status", { length: 16 }).notNull().default("active"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedBy: uuid("revoked_by"),
+    revokeReason: text("revoke_reason"),
+  },
+  (t) => [
+    unique("agent_credentials_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({ name: "agent_credentials_agent_fk", columns: [t.agentId, t.organizationId], foreignColumns: [agents.id, agents.organizationId] }).onDelete("restrict"),
+    uniqueIndex("agent_credentials_one_active").on(t.agentId).where(sql`${t.status} = 'active'`),
+    index("agent_credentials_agent_idx").on(t.organizationId, t.agentId, t.createdAt),
+    check("agent_credentials_status_check", sql`${t.status} in ('active','revoked')`),
+    check("agent_credentials_hash_check", sql`${t.secretHash} ~ '^[0-9a-f]{64}$'`),
+  ],
+);
+
+/** Append-only history of credential issue, rotation and revocation. */
+export const credentialRotationHistory = pgTable(
+  "credential_rotation_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
+    credentialId: uuid("credential_id").notNull(),
+    previousCredentialId: uuid("previous_credential_id"),
+    action: varchar("action", { length: 16 }).notNull(),
+    actorId: uuid("actor_id").notNull(),
+    actorType: varchar("actor_type", { length: 8 }).notNull(),
+    reason: text("reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ name: "credential_history_credential_fk", columns: [t.credentialId, t.organizationId], foreignColumns: [agentCredentials.id, agentCredentials.organizationId] }).onDelete("restrict"),
+    index("credential_history_agent_idx").on(t.organizationId, t.agentId, t.createdAt),
+    check("credential_history_action_check", sql`${t.action} in ('issued','rotated','revoked')`),
+  ],
+);
+
+/**
+ * A grant: this agent may perform this action on this resource. Registry
+ * capabilities and dependency edges never authorize anything; only a grant does.
+ * Mutable only to revoke (a trigger enforces that).
+ */
+export const permissions = pgTable(
+  "permissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
+    resourceId: uuid("resource_id").notNull(),
+    action: varchar("action", { length: 64 }).notNull(),
+    constraints: jsonb("constraints").notNull().default(sql`'{}'::jsonb`),
+    status: varchar("status", { length: 16 }).notNull().default("active"),
+    version: integer("version").notNull().default(1),
+    grantedBy: uuid("granted_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    revokedBy: uuid("revoked_by"),
+    revokeReason: text("revoke_reason"),
+  },
+  (t) => [
+    unique("permissions_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({ name: "permissions_agent_fk", columns: [t.agentId, t.organizationId], foreignColumns: [agents.id, agents.organizationId] }).onDelete("restrict"),
+    foreignKey({ name: "permissions_resource_fk", columns: [t.resourceId, t.organizationId], foreignColumns: [resources.id, resources.organizationId] }).onDelete("restrict"),
+    uniqueIndex("permissions_one_active").on(t.organizationId, t.agentId, t.resourceId, t.action).where(sql`${t.status} = 'active'`),
+    index("permissions_lookup_idx").on(t.organizationId, t.agentId, t.resourceId, t.status),
+    check("permissions_status_check", sql`${t.status} in ('active','revoked')`),
+    check("permissions_action_check", sql`length(btrim(${t.action})) > 0`),
+  ],
+);
+
+/** How a resource is protected: every access goes through the gateway, or only some does. */
+export const resourceEnforcement = pgTable(
+  "resource_enforcement",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    resourceId: uuid("resource_id").notNull(),
+    mode: varchar("mode", { length: 16 }).notNull(),
+    updatedBy: uuid("updated_by").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ name: "resource_enforcement_resource_fk", columns: [t.resourceId, t.organizationId], foreignColumns: [resources.id, resources.organizationId] }).onDelete("restrict"),
+    unique("resource_enforcement_unique").on(t.organizationId, t.resourceId),
+    check("resource_enforcement_mode_check", sql`${t.mode} in ('gateway','advisory')`),
+  ],
+);
+
+/** Append-only audit of grants, revocations and enforcement-mode changes. */
+export const gatewayAuditLogs = pgTable(
+  "gateway_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    actorId: uuid("actor_id").notNull(),
+    actorType: varchar("actor_type", { length: 8 }).notNull(),
+    action: varchar("action", { length: 64 }).notNull(),
+    targetType: varchar("target_type", { length: 32 }).notNull(),
+    targetId: uuid("target_id"),
+    beforeState: jsonb("before_state"),
+    afterState: jsonb("after_state"),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("gateway_audit_logs_idx").on(t.organizationId, t.createdAt)],
+);
+
+/** Append-only record of every authorization decision, including denials. The payload is never stored, only its hash. */
+export const gatewayDecisions = pgTable(
+  "gateway_decisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
+    requestId: varchar("request_id", { length: 100 }).notNull(),
+    stage: varchar("stage", { length: 12 }).notNull(),
+    resourceRef: varchar("resource_ref", { length: 200 }).notNull(),
+    resourceId: uuid("resource_id"),
+    action: varchar("action", { length: 64 }).notNull(),
+    decision: varchar("decision", { length: 8 }).notNull(),
+    reasonCodes: jsonb("reason_codes").notNull(),
+    permissionId: uuid("permission_id"),
+    permissionVersion: integer("permission_version"),
+    payloadHash: varchar("payload_hash", { length: 64 }),
+    credentialId: uuid("credential_id"),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("gateway_decisions_request_stage").on(t.organizationId, t.agentId, t.requestId, t.stage),
+    index("gateway_decisions_agent_idx").on(t.organizationId, t.agentId, t.createdAt),
+    check("gateway_decisions_stage_check", sql`${t.stage} in ('check','precheck','recheck')`),
+    check("gateway_decisions_decision_check", sql`${t.decision} in ('allow','deny')`),
+  ],
+);
+
+/**
+ * One row per protected operation, claimed as 'pending' BEFORE anything runs
+ * (at-most-once execution per agent and request id) and finalized exactly once.
+ * A row stuck in 'pending' means the outcome is unknown, and is never retried.
+ */
+export const executionRecords = pgTable(
+  "execution_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
+    requestId: varchar("request_id", { length: 100 }).notNull(),
+    resourceRef: varchar("resource_ref", { length: 200 }).notNull(),
+    resourceId: uuid("resource_id"),
+    action: varchar("action", { length: 64 }).notNull(),
+    status: varchar("status", { length: 16 }).notNull().default("pending"),
+    precheckDecisionId: uuid("precheck_decision_id"),
+    recheckDecisionId: uuid("recheck_decision_id"),
+    executor: varchar("executor", { length: 64 }),
+    simulated: boolean("simulated").notNull().default(false),
+    externalReference: varchar("external_reference", { length: 500 }),
+    failureReason: text("failure_reason"),
+    result: jsonb("result"),
+    payloadHash: varchar("payload_hash", { length: 64 }),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("execution_records_request_unique").on(t.organizationId, t.agentId, t.requestId),
+    index("execution_records_agent_idx").on(t.organizationId, t.agentId, t.createdAt),
+    check("execution_records_status_check", sql`${t.status} in ('pending','denied','failed','submitted','executed')`),
+  ],
+);
+
+/**
+ * A containment or emergency restriction applied through an adapter. 'executed'
+ * means CORVEN's own enforcement state changed; it is not proof of containment
+ * (that is Verification's job). An executed `revoke_resource_access` action is
+ * also an active restriction that the policy evaluator honours until rolled back.
+ */
+export const enforcementActions = pgTable(
+  "enforcement_actions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id"),
+    planHash: varchar("plan_hash", { length: 64 }),
+    edgeId: uuid("edge_id"),
+    kind: varchar("kind", { length: 32 }).notNull(),
+    agentId: uuid("agent_id"),
+    resourceId: uuid("resource_id"),
+    status: varchar("status", { length: 16 }).notNull().default("pending"),
+    adapter: varchar("adapter", { length: 64 }),
+    approvalBasis: varchar("approval_basis", { length: 24 }).notNull(),
+    approvalRef: varchar("approval_ref", { length: 200 }),
+    reason: text("reason").notNull(),
+    result: jsonb("result"),
+    failureReason: text("failure_reason"),
+    externalReference: varchar("external_reference", { length: 500 }),
+    idempotencyKey: varchar("idempotency_key", { length: 200 }),
+    requestedBy: uuid("requested_by").notNull(),
+    requestedByType: varchar("requested_by_type", { length: 8 }).notNull(),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("enforcement_actions_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({ name: "enforcement_actions_incident_fk", columns: [t.incidentId, t.organizationId], foreignColumns: [incidents.id, incidents.organizationId] }).onDelete("restrict"),
+    foreignKey({ name: "enforcement_actions_agent_fk", columns: [t.agentId, t.organizationId], foreignColumns: [agents.id, agents.organizationId] }).onDelete("restrict"),
+    foreignKey({ name: "enforcement_actions_resource_fk", columns: [t.resourceId, t.organizationId], foreignColumns: [resources.id, resources.organizationId] }).onDelete("restrict"),
+    uniqueIndex("enforcement_actions_idem").on(t.organizationId, t.idempotencyKey).where(sql`${t.idempotencyKey} is not null`),
+    index("enforcement_actions_restriction_idx").on(t.organizationId, t.agentId, t.resourceId, t.status),
+    index("enforcement_actions_incident_idx").on(t.organizationId, t.incidentId, t.createdAt),
+    check("enforcement_actions_status_check", sql`${t.status} in ('pending','submitted','executed','failed','unsupported','rolled_back')`),
+    check("enforcement_actions_kind_check", sql`${t.kind} in ('revoke_resource_access','suspend_agent','revoke_credentials','revoke_authority','block_operational_trigger')`),
+    check("enforcement_actions_basis_check", sql`${t.approvalBasis} in ('plan_approval','admin_override')`),
+  ],
+);
+
+/** Append-only: every status an enforcement action passed through, so submitted, executed and failed stay distinguishable. */
+export const enforcementActionEvents = pgTable(
+  "enforcement_action_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity(),
+    organizationId: uuid("organization_id").notNull(),
+    actionId: uuid("action_id").notNull(),
+    status: varchar("status", { length: 16 }).notNull(),
+    detail: jsonb("detail").notNull().default(sql`'{}'::jsonb`),
+    actorId: uuid("actor_id").notNull(),
+    actorType: varchar("actor_type", { length: 8 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ name: "enforcement_action_events_action_fk", columns: [t.actionId, t.organizationId], foreignColumns: [enforcementActions.id, enforcementActions.organizationId] }).onDelete("restrict"),
+    index("enforcement_action_events_idx").on(t.organizationId, t.actionId, t.seq),
+  ],
+);

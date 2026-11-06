@@ -10,6 +10,7 @@ import { createBlastRadius, registerBlastRadius } from "./modules/blast-radius/i
 import { createContainment, registerContainment } from "./modules/containment/index.js";
 import { createDependencyDiscovery, registerDependencyDiscovery } from "./modules/dependency-discovery/index.js";
 import type { JobQueue } from "./modules/dependency-discovery/jobs/queue.js";
+import { createAuthorizationGateway, registerAuthorizationGateway, type GatewayHooks, type ResourceExecutors, type ApprovalVerifier, type AgentAuthConfig } from "./modules/authorization-gateway/index.js";
 import { createIncidentManagement, registerIncidentManagement } from "./modules/incident-management/index.js";
 import { createGraphSnapshots, registerGraphSnapshots } from "./modules/graph-snapshot/index.js";
 import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
@@ -18,6 +19,7 @@ import { createDependencyRegistry, registerDependencyRegistry } from "./modules/
 declare module "fastify" {
   interface FastifyInstance {
     incidentManagement: ReturnType<typeof createIncidentManagement>;
+    gateway: ReturnType<typeof createAuthorizationGateway>;
   }
   interface FastifyRequest {
     principal: Principal;
@@ -34,6 +36,9 @@ export interface BuildAppOptions {
   containment?: ReturnType<typeof createContainment>;
   graphSnapshots?: ReturnType<typeof createGraphSnapshots>;
   incidentManagement?: ReturnType<typeof createIncidentManagement>;
+  gateway?: ReturnType<typeof createAuthorizationGateway>;
+  /** Gateway wiring when `gateway` is not supplied. */
+  gatewayOptions?: { agentAuth?: AgentAuthConfig | null; hooks?: GatewayHooks; executors?: ResourceExecutors; approvals?: ApprovalVerifier };
   discovery?: ReturnType<typeof createDependencyDiscovery>;
   /** Background queue for discovery runs. Defaults to an in-process queue; the server uses pg-boss. */
   discoveryQueue?: JobQueue;
@@ -55,6 +60,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
 
   app.addHook("onRequest", async (req) => {
     if (req.url === "/health") return;
+    // Machine-facing routes authenticate themselves (an agent token) or are the public token exchange.
+    if (req.routeOptions.config?.auth) return;
     const principal = opts.authenticate(req.headers);
     if (!principal) throw new UnauthorizedError();
     req.principal = principal;
@@ -113,8 +120,29 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
       containment: containment.containment,
     });
   await registerIncidentManagement(app, incidents);
+  const agentReader = new AgentRegistryReader(opts.db, registry.repo);
+  const resourceLookup = { getResource: (org: string, id: string) => dependencyRegistry.resourcesRepo.find(opts.db, org, id) };
+  const gateway =
+    opts.gateway ??
+    createAuthorizationGateway(opts.db, {
+      agents: agentReader,
+      resources: resourceLookup,
+      resolver: {
+        // A request names a resource by id, external reference or name, in that order.
+        resolve: async (org, ref) =>
+          (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ref) ? await dependencyRegistry.resourcesRepo.find(opts.db, org, ref) : null) ??
+          (await dependencyRegistry.resourcesRepo.findByExternalReference(opts.db, org, ref)) ??
+          (await dependencyRegistry.resourcesRepo.findByName(opts.db, org, ref)),
+      },
+      coverageGraph: liveGraph,
+      incidents: incidents.reader,
+      agentStatus: registry.status,
+      ...opts.gatewayOptions,
+    });
+  await registerAuthorizationGateway(app, gateway);
   // Exposed so trusted in-process modules (and tests) can use the service as the `system` principal. Never reachable over HTTP.
   app.decorate("incidentManagement", incidents);
+  app.decorate("gateway", gateway);
   const discovery = opts.discovery ?? createDependencyDiscovery(opts.db, registry.repo, dependencyRegistry, opts.discoveryQueue);
   await registerDependencyDiscovery(app, discovery);
   await discovery.start();

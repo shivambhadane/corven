@@ -6,6 +6,7 @@ import { devHeaderAuthenticator } from "../src/auth/dev-auth.js";
 import type { Role } from "../src/auth/principal.js";
 import { createDb, type DbHandle } from "../src/db/client.js";
 import { createAgentRegistry } from "../src/modules/agent-registry/index.js";
+import { defaultAgentAuthConfig, ResourceExecutors, type GatewayHooks } from "../src/modules/authorization-gateway/index.js";
 import { createDependencyDiscovery } from "../src/modules/dependency-discovery/index.js";
 import { InlineJobQueue } from "../src/modules/dependency-discovery/jobs/queue.js";
 import { createGraphEngine } from "../src/modules/graph-engine/index.js";
@@ -22,6 +23,11 @@ export interface TestCtx {
   /** In-process discovery queue: `await ctx.queue.idle()` waits for started runs to finish. */
   queue: InlineJobQueue;
   discovery: ReturnType<typeof createDependencyDiscovery>;
+  /** Gateway test controls: executors per resource, a hook between pre-check and re-check, a clock offset, and which plans count as approved. */
+  executors: ResourceExecutors;
+  hooks: GatewayHooks;
+  clock: { offsetMs: number };
+  approvedPlans: Set<string>;
   close(): Promise<void>;
 }
 
@@ -33,7 +39,13 @@ export async function createCtx(repo?: AgentRepository, depRepo?: DependencyRepo
   const graphEngine = graphOverride ? graphOverride(realGraph) : realGraph;
   const queue = new InlineJobQueue();
   const discovery = createDependencyDiscovery(handle.db, registry.repo, depRegistry, queue);
-  const app = await buildApp({ db: handle.db, authenticate: devHeaderAuthenticator, registry, dependencyRegistry: depRegistry, graphEngine, discovery });
+  const executors = new ResourceExecutors();
+  const hooks: GatewayHooks = {};
+  const clock = { offsetMs: 0 };
+  const approvedPlans = new Set<string>();
+  const agentAuth = { ...defaultAgentAuthConfig(Buffer.alloc(32, 7)), now: () => new Date(Date.now() + clock.offsetMs) };
+  const approvals = { isPlanApproved: async (org: string, incidentId: string, planHash: string) => approvedPlans.has(`${org}:${incidentId}:${planHash}`) };
+  const app = await buildApp({ db: handle.db, authenticate: devHeaderAuthenticator, registry, dependencyRegistry: depRegistry, graphEngine, discovery, gatewayOptions: { agentAuth, hooks, executors, approvals } });
   await app.ready();
   return {
     handle,
@@ -43,6 +55,10 @@ export async function createCtx(repo?: AgentRepository, depRepo?: DependencyRepo
     graphEngine,
     queue,
     discovery,
+    executors,
+    hooks,
+    clock,
+    approvedPlans,
     close: async () => {
       await app.close();
       await handle.close();
