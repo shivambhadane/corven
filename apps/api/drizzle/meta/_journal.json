@@ -43,6 +43,34 @@
       "when": 1793911525749,
       "tag": "0005_evidence_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793943150815,
+      "tag": "0006_graph_snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793943151667,
+      "tag": "0007_snapshot_append_only",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793943510319,
+      "tag": "0008_dependency_discovery",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793943511468,
+      "tag": "0009_discovery_append_only",
+      "breakpoints": true
     }
   ]
 }

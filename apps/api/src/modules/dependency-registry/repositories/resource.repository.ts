@@ -40,6 +40,11 @@ export class ResourceRepository {
     }
   }
 
+  async findByName(tx: Executor, organizationId: string, name: string): Promise<Resource | null> {
+    const rows = await tx.select().from(resources).where(and(eq(resources.organizationId, organizationId), sql`lower(${resources.name}) = lower(${name})`));
+    return rows[0] ? toResource(rows[0]) : null;
+  }
+
   async findByExternalReference(tx: Executor, organizationId: string, externalReference: string): Promise<Resource | null> {
     const rows = await tx
       .select()

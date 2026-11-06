@@ -100,6 +100,11 @@ export class AgentRepository {
     }
   }
 
+  async findByName(tx: Executor, organizationId: string, name: string): Promise<Agent | null> {
+    const rows = await tx.select().from(agents).where(and(eq(agents.organizationId, organizationId), sql`lower(${agents.name}) = lower(${name})`));
+    return rows[0] ? toAgent(rows[0]) : null;
+  }
+
   async findByExternalReference(tx: Executor, organizationId: string, externalReference: string): Promise<Agent | null> {
     const rows = await tx
       .select()

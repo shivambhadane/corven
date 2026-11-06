@@ -1,6 +1,6 @@
 # Containment Engine
 
-**Status: planned (design).** This is CORVEN's central technical capability and the riskiest module. The algorithm below is a **proposal for review**, chosen to be exactly solvable and explainable. It is not implemented.
+**Status: planned (design).** This is CORVEN's central technical capability and the riskiest module. The algorithm below is a **proposal for review**, chosen to be exactly solvable and explainable. **Status update: implemented and tested** (`apps/api/src/modules/containment`, `POST /api/v1/containment/plan`; Dinic max-flow minimum cut, verified against brute force). Per-module docs are still to be written. Workflow preservation is sound but not complete, and plans are advisory: nothing is enforced until the gateway exists.
 
 ## Purpose
 

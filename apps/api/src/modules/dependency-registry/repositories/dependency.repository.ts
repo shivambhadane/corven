@@ -292,6 +292,22 @@ export class DependencyRepository {
     return rows.map(toDependency);
   }
 
+  /**
+   * Ids of ACTIVE dependencies that have evidence whose source reference starts with `prefix`
+   * (discovery tags its evidence as `src:<sourceId>/...`). Read-only; used to find dependencies
+   * a source used to support but no longer reports.
+   */
+  async listActiveIdsByEvidencePrefix(tx: Executor, organizationId: string, prefix: string): Promise<string[]> {
+    const escaped = prefix.replace(/[\\%_]/g, (c) => `\\${c}`);
+    const rows = await tx
+      .selectDistinct({ id: dependencies.id })
+      .from(dependencies)
+      .innerJoin(dependencyEvidence, and(eq(dependencyEvidence.dependencyId, dependencies.id), eq(dependencyEvidence.organizationId, dependencies.organizationId)))
+      .where(and(eq(dependencies.organizationId, organizationId), eq(dependencies.status, "active"), sql`${dependencyEvidence.sourceReference} like ${escaped + "%"}`))
+      .orderBy(asc(dependencies.id));
+    return rows.map((r) => r.id);
+  }
+
   // ----- bulk read for the future Graph Engine
 
   async listActive(

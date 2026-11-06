@@ -6,6 +6,8 @@ import { devHeaderAuthenticator } from "../src/auth/dev-auth.js";
 import type { Role } from "../src/auth/principal.js";
 import { createDb, type DbHandle } from "../src/db/client.js";
 import { createAgentRegistry } from "../src/modules/agent-registry/index.js";
+import { createDependencyDiscovery } from "../src/modules/dependency-discovery/index.js";
+import { InlineJobQueue } from "../src/modules/dependency-discovery/jobs/queue.js";
 import { createGraphEngine } from "../src/modules/graph-engine/index.js";
 import { createDependencyRegistry } from "../src/modules/dependency-registry/index.js";
 import type { DependencyRepository } from "../src/modules/dependency-registry/repositories/dependency.repository.js";
@@ -17,6 +19,9 @@ export interface TestCtx {
   registry: ReturnType<typeof createAgentRegistry>;
   depRegistry: ReturnType<typeof createDependencyRegistry>;
   graphEngine: ReturnType<typeof createGraphEngine>;
+  /** In-process discovery queue: `await ctx.queue.idle()` waits for started runs to finish. */
+  queue: InlineJobQueue;
+  discovery: ReturnType<typeof createDependencyDiscovery>;
   close(): Promise<void>;
 }
 
@@ -26,7 +31,9 @@ export async function createCtx(repo?: AgentRepository, depRepo?: DependencyRepo
   const depRegistry = createDependencyRegistry(handle.db, registry.repo, depRepo);
   const realGraph = createGraphEngine(handle.db, registry.repo, depRegistry.resourcesRepo, depRegistry.repo);
   const graphEngine = graphOverride ? graphOverride(realGraph) : realGraph;
-  const app = await buildApp({ db: handle.db, authenticate: devHeaderAuthenticator, registry, dependencyRegistry: depRegistry, graphEngine });
+  const queue = new InlineJobQueue();
+  const discovery = createDependencyDiscovery(handle.db, registry.repo, depRegistry, queue);
+  const app = await buildApp({ db: handle.db, authenticate: devHeaderAuthenticator, registry, dependencyRegistry: depRegistry, graphEngine, discovery });
   await app.ready();
   return {
     handle,
@@ -34,6 +41,8 @@ export async function createCtx(repo?: AgentRepository, depRepo?: DependencyRepo
     registry,
     depRegistry,
     graphEngine,
+    queue,
+    discovery,
     close: async () => {
       await app.close();
       await handle.close();

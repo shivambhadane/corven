@@ -18,18 +18,20 @@ describe("migrations", () => {
     url.pathname = `/${dbName}`;
     const handle = createDb(url.toString());
     const tables = async () =>
-      (await handle.pool.query("select table_name from information_schema.tables where table_schema='public' and table_name in ('agents','agent_capabilities','agent_identities','agent_status_history','agent_audit_logs','dependencies','dependency_versions','dependency_audit_logs','dependency_evidence','resources') order by 1")).rows.map((r) => r.table_name);
+      (await handle.pool.query("select table_name from information_schema.tables where table_schema='public' and table_name in ('agents','agent_capabilities','agent_identities','agent_status_history','agent_audit_logs','dependencies','dependency_versions','dependency_audit_logs','dependency_evidence','graph_snapshots','resources','discovery_sources','discovery_runs','discovery_observations','discovery_reconciliation_results','discovery_reviews','discovery_runtime_events') order by 1")).rows.map((r) => r.table_name);
     try {
       await runMigrations(handle.db);
       await runMigrations(handle.db); // idempotent
       const expected = [
         "agent_audit_logs", "agent_capabilities", "agent_identities", "agent_status_history", "agents",
-        "dependencies", "dependency_audit_logs", "dependency_evidence", "dependency_versions", "resources",
+        "dependencies", "dependency_audit_logs", "dependency_evidence", "dependency_versions", "discovery_observations", "discovery_reconciliation_results", "discovery_reviews", "discovery_runs", "discovery_runtime_events", "discovery_sources", "graph_snapshots", "resources",
       ];
       expect(await tables()).toEqual(expected);
 
       // newest first
       for (const f of [
+        "0009_discovery_append_only", "0008_dependency_discovery",
+        "0007_snapshot_append_only", "0006_graph_snapshots",
         "0005_evidence_append_only", "0004_discovery_prerequisites",
         "0003_dependency_append_only", "0002_dependency_registry",
         "0001_append_only_audit", "0000_agent_registry",

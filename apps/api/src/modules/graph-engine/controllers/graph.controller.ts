@@ -16,6 +16,8 @@ export const edgeDto = (e: GraphEdge) => ({
   provenance: { ...e.provenance },
   metadata: { ...e.metadata },
   version: e.version,
+  observedAt: e.observedAt ? e.observedAt.toISOString() : null,
+  lastVerifiedAt: e.lastVerifiedAt ? e.lastVerifiedAt.toISOString() : null,
   createdAt: e.createdAt.toISOString(),
   updatedAt: e.updatedAt.toISOString(),
 });

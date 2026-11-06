@@ -55,6 +55,8 @@ export class RegistryGraphInputProvider {
               provenance: { ...x.provenance },
               metadata: x.metadata,
               version: x.version,
+              observedAt: x.observedAt,
+              lastVerifiedAt: x.lastVerifiedAt,
               createdAt: x.createdAt,
               updatedAt: x.updatedAt,
             })),

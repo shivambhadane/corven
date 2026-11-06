@@ -1,6 +1,6 @@
 # Blast-Radius Engine
 
-**Status: planned (design).** Builds directly on the implemented Graph Engine; no new storage is required beyond persisting results with an incident.
+**Status: implemented and tested** (`apps/api/src/modules/blast-radius`, `POST /api/v1/blast-radius/analyze`; optional `snapshotId`). The text below is the original design; detailed per-module docs are still to be written. Builds directly on the implemented Graph Engine; no new storage is required beyond persisting results with an incident.
 
 ## Purpose
 

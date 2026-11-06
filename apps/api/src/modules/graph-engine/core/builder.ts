@@ -88,6 +88,8 @@ export function buildGraph(organizationId: string, input: GraphInput, options: B
         provenance: d.provenance,
         metadata: d.metadata,
         version: d.version,
+        observedAt: d.observedAt ?? null,
+        lastVerifiedAt: d.lastVerifiedAt ?? null,
         createdAt: d.createdAt,
         updatedAt: d.updatedAt,
       }),

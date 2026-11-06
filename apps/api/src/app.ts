@@ -5,6 +5,11 @@ import type { Authenticator, Principal } from "./auth/principal.js";
 import type { Database } from "./db/client.js";
 import { AppError, UnauthorizedError } from "./errors.js";
 import { createAgentRegistry, registerAgentRegistry } from "./modules/agent-registry/index.js";
+import { createBlastRadius, registerBlastRadius } from "./modules/blast-radius/index.js";
+import { createContainment, registerContainment } from "./modules/containment/index.js";
+import { createDependencyDiscovery, registerDependencyDiscovery } from "./modules/dependency-discovery/index.js";
+import type { JobQueue } from "./modules/dependency-discovery/jobs/queue.js";
+import { createGraphSnapshots, registerGraphSnapshots } from "./modules/graph-snapshot/index.js";
 import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
 import { createDependencyRegistry, registerDependencyRegistry } from "./modules/dependency-registry/index.js";
 
@@ -20,6 +25,12 @@ export interface BuildAppOptions {
   registry?: ReturnType<typeof createAgentRegistry>;
   dependencyRegistry?: ReturnType<typeof createDependencyRegistry>;
   graphEngine?: ReturnType<typeof createGraphEngine>;
+  blastRadius?: ReturnType<typeof createBlastRadius>;
+  containment?: ReturnType<typeof createContainment>;
+  graphSnapshots?: ReturnType<typeof createGraphSnapshots>;
+  discovery?: ReturnType<typeof createDependencyDiscovery>;
+  /** Background queue for discovery runs. Defaults to an in-process queue; the server uses pg-boss. */
+  discoveryQueue?: JobQueue;
   logger?: boolean;
 }
 
@@ -73,6 +84,20 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   await registerAgentRegistry(app, registry);
   const dependencyRegistry = opts.dependencyRegistry ?? createDependencyRegistry(opts.db, registry.repo);
   await registerDependencyRegistry(app, dependencyRegistry);
-  await registerGraphEngine(app, opts.graphEngine ?? createGraphEngine(opts.db, registry.repo, dependencyRegistry.resourcesRepo, dependencyRegistry.repo));
+  const graphEngine = opts.graphEngine ?? createGraphEngine(opts.db, registry.repo, dependencyRegistry.resourcesRepo, dependencyRegistry.repo);
+  const snapshots = opts.graphSnapshots ?? createGraphSnapshots(opts.db, graphEngine.graphs);
+  await registerGraphSnapshots(app, snapshots);
+  await registerGraphEngine(app, graphEngine);
+  /** Live graph, or a hash-verified pinned snapshot when a snapshot id is given. */
+  const liveGraph = {
+    load: async (principal: Principal, snapshotId?: string) =>
+      snapshotId ? snapshots.snapshots.loadGraph(principal, snapshotId) : (await graphEngine.graphs.buildFor(principal)).graph,
+  };
+  await registerBlastRadius(app, opts.blastRadius ?? createBlastRadius(liveGraph));
+  await registerContainment(app, opts.containment ?? createContainment(liveGraph));
+  const discovery = opts.discovery ?? createDependencyDiscovery(opts.db, registry.repo, dependencyRegistry, opts.discoveryQueue);
+  await registerDependencyDiscovery(app, discovery);
+  await discovery.start();
+  app.addHook("onClose", async () => void (await discovery.queue.stop()));
   return app;
 }

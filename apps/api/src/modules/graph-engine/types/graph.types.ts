@@ -43,6 +43,9 @@ export interface GraphEdge {
   readonly provenance: Readonly<Record<string, unknown>>;
   readonly metadata: Readonly<Record<string, unknown>>;
   readonly version: number;
+  /** Freshness as recorded by the registry; null when the registry has no value. */
+  readonly observedAt: Date | null;
+  readonly lastVerifiedAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -80,6 +83,8 @@ export interface DependencyRecord {
   provenance: Record<string, unknown>;
   metadata: Record<string, unknown>;
   version: number;
+  observedAt?: Date | null;
+  lastVerifiedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
