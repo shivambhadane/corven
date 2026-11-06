@@ -28,7 +28,8 @@ The central differentiator is not detecting or disabling a compromised agent. It
 | Incident Management | Built and tested |
 | Authorization & Enforcement Gateway | Built and tested; resource executors simulated |
 | Approval Service | Built and tested |
-| Verification, Evidence | Designed in these docs, not built |
+| Verification Service | Built and tested; probes use simulated executors |
+| Evidence | Designed in these docs, not built |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built |
 | Dashboard | Not built. A static landing page exists in `apps/landing` |
 | Authentication | **Development-only adapter.** No real authentication or organizations yet |

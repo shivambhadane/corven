@@ -22,6 +22,8 @@ Source: `apps/api/src/db/schema.ts` (Drizzle) and the SQL in `apps/api/drizzle/`
 | `0013_gateway_append_only` | Append-only and finalize-once guards | `down/0013_…` |
 | `0014_approval_service` | `approval_policies`, `approval_requests`, `approval_decisions`, `approval_audit_logs`; unique `(id, organization_id)` on `incident_analysis_references` | `down/0014_…` |
 | `0015_approval_append_only` | Frozen binding, final status, append-only decisions and audit | `down/0015_…` |
+| `0016_verification_service` | `verification_runs`, `verification_checks` | `down/0016_…` |
+| `0017_verification_append_only` | Final-once runs, append-only checks | `down/0017_…` |
 
 Apply with `pnpm --filter @corven/api db:migrate` (needs `DATABASE_URL`). Drizzle Kit has no down migrations; the `down/` scripts are hand-written, destructive, and applied newest first. The migration test applies all up, all down, then up again.
 
@@ -129,6 +131,10 @@ Tables, guards and ER diagram: [../modules/authorization-enforcement/data-model.
 ## Approval Service
 
 See [../modules/approval-service/data-model.md](../modules/approval-service/data-model.md).
+
+## Verification Service
+
+`verification_runs` (incident, approval, plan reference and hash, snapshot hash, attempt, retry link, status, summary, result hash, incident outcome, sync flag; one active run per incident; final once) and `verification_checks` (append-only; category, purpose, target, expected, actual, result, detail, execution reference, limitation). See [../modules/verification-service/verification-model.md](../modules/verification-service/verification-model.md).
 
 ## Append-only enforcement
 

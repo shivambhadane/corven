@@ -68,6 +68,10 @@ The re-check runs after the pre-check and immediately before the executor is cal
 | No adapter for an enforcement action | `unsupported`, never `executed` |
 | Approval verifier unavailable or absent | plan-based enforcement refused |
 
+## Probe (for Verification)
+
+`GatewayService.probe(org, agentId, {resource, action})` evaluates the same decision path for the agent's current credential state and, if allowed, calls the executor's optional non-destructive `probe()`. Nothing is executed. See [../verification-service/test-types.md](../verification-service/test-types.md).
+
 ## Coverage
 
 `GET /gateway/coverage` classifies each active dependency edge: `CONTROLLED`, `PARTIALLY_CONTROLLED`, `NOT_CONTROLLED`, `UNKNOWN`. `toContainmentCoverage()` converts the report into the Containment Engine's `coverage` input (uncontrollable edges are blocked from cuts; partially controlled edges cost 2). Details in [enforcement-adapters.md](enforcement-adapters.md).

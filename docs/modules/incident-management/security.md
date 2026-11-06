@@ -23,7 +23,7 @@ Every repository method filters on `organization_id`. A foreign incident, agent,
 
 ## Credential hygiene
 
-Titles, descriptions, notes, reasons, assignment notes, source references and external event data are scanned for private keys, AWS keys, bearer tokens, JWTs, 32-byte hex values, API keys and inline `password=` style values, and for secret-looking key names in structured data. Matches are rejected with `CONTAINS_SECRET`, naming the kind of thing found but never echoing it. This is a guardrail, not a scanner: it cannot find every secret. The timeline records note existence and length, not note text.
+Titles, descriptions, notes, reasons, assignment notes, source references and external event data are scanned for private keys, AWS keys, bearer tokens, JWTs, 32-byte hex values, API keys and inline `password=` style values, and for secret-looking key names in structured data. Key names are matched as password, passphrase, secret, token, private key, API key, mnemonic, seed phrase, credential, authorization or bearer (a bare "pass", as in `passed`, is not). Matches are rejected with `CONTAINS_SECRET`, naming the kind of thing found but never echoing it. This is a guardrail, not a scanner: it cannot find every secret. The timeline records note existence and length, not note text.
 
 ## Threats considered
 

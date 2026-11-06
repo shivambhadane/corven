@@ -92,7 +92,7 @@ Technology choices and integrations may evolve during implementation.
 | Blast-Radius and Containment engines       | Built and tested ([blast radius](docs/modules/05-blast-radius-engine.md), [containment](docs/modules/06-containment-engine.md)) |
 | Authorization & Enforcement Gateway        | Built and tested; executors simulated ([docs](docs/modules/authorization-enforcement/README.md)) |
 | Approval Service                           | Built and tested ([docs](docs/modules/approval-service/README.md)) |
-| Verification                               | Designed, not built                       |
+| Verification Service                       | Built and tested; probes use simulated executors ([docs](docs/modules/verification-service/README.md)) |
 | Evidence Service                           | Designed, not built                       |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built                      |
 | Dashboard                                  | Not started (landing page: `apps/landing`) |
