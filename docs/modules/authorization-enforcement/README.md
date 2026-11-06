@@ -17,7 +17,7 @@ The controlled execution boundary for agent operations and the place where conta
 | Resource executors | **Simulated** (`SimulatedExecutor`) or caller-supplied; none talks to an external system |
 | On-chain enforcement adapter | **Not built** |
 | Authority (delegation) and operational (agent-to-agent) edges | **No enforcement point**: reported `NOT_CONTROLLED`, actions recorded `unsupported` |
-| Approval verification | A port (`ApprovalVerifier`). The default approves nothing. The Approval Service (next module) implements it |
+| Approval verification | Implemented by the Approval Service (`isPlanApproved`); without it the default approves nothing |
 | Revoking independent credentials (wallet keys, API keys, DB passwords) | **Not possible**; every adapter result says so |
 
 ## Documents

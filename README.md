@@ -91,7 +91,8 @@ Technology choices and integrations may evolve during implementation.
 | Incident Management                        | Built and tested ([docs](docs/modules/incident-management/README.md)) |
 | Blast-Radius and Containment engines       | Built and tested ([blast radius](docs/modules/05-blast-radius-engine.md), [containment](docs/modules/06-containment-engine.md)) |
 | Authorization & Enforcement Gateway        | Built and tested; executors simulated ([docs](docs/modules/authorization-enforcement/README.md)) |
-| Approval, Verification                     | Designed, not built                       |
+| Approval Service                           | Built and tested ([docs](docs/modules/approval-service/README.md)) |
+| Verification                               | Designed, not built                       |
 | Evidence Service                           | Designed, not built                       |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built                      |
 | Dashboard                                  | Not started (landing page: `apps/landing`) |

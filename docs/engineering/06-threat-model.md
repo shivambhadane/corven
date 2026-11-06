@@ -46,7 +46,9 @@ External attacker with network access; malicious or compromised tenant user; com
 | T13 | DoS: request floods, brute force | Rate limiting | **Planned** |
 | T14 | **Elevation:** operator performs recovery or verification | Role checks; every exit from `compromised` is admin-only | Built |
 | T15 | Elevation: the `system` role obtained over HTTP | HTTP authenticators return human roles only; `x-dev-role: system` rejected (tested) | Built |
-| T16 | Elevation: approval reused for a different plan | Approval bound to plan hash | Planned |
+| T16 | Elevation: approval reused for a different plan | Approval digest over plan, snapshot and result hashes; recomputed at request, decision and execution; one plan reference per request | Built, tested |
+| T16a | Elevation: self-approval or approval by an unauthorized person | `approval:decide` only for `approver`/`admin`; separation of duties by policy; one decision per person | Built, tested (identity still from the development authenticator) |
+| T16b | Stale approval executed long after review | Pending expiry and an execution window | Built, tested |
 | T17 | Race: two requests create an authority cycle | Per-organization advisory lock (tested) | Built |
 | T18 | Race: concurrent status changes | Row lock; exactly one wins (tested) | Built |
 | T19 | Unauthenticated runtime events accepted as evidence | Unique event ids, redaction, 0.65 confidence for attempted/denied and human review below 0.8. Producer authentication and signatures | **Partly built.** Ingestion needs `discovery:ingest` (human roles today); event authenticity is planned with the gateway |

@@ -15,7 +15,7 @@ Later modules publish facts with `IncidentService.recordExternalEvent(principal,
 | Type | Intended producer |
 |---|---|
 | `detection.signal_received` | detection sources |
-| `approval.granted`, `approval.rejected` | Approval Service |
+| `approval.granted`, `approval.rejected`, `approval.expired`, `approval.cancelled`, `approval.invalidated` | Approval Service (implemented) |
 | `enforcement.result_received` | Authorization and Enforcement Gateway |
 | `verification.result_received` | Verification Service |
 | `evidence.generated` | Evidence Service |

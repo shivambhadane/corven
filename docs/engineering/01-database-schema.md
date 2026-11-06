@@ -20,6 +20,8 @@ Source: `apps/api/src/db/schema.ts` (Drizzle) and the SQL in `apps/api/drizzle/`
 | `0011_incident_append_only` | Triggers on the eight incident history tables | `down/0011_…` |
 | `0012_authorization_gateway` | `agent_credentials`, `credential_rotation_history`, `permissions`, `resource_enforcement`, `gateway_audit_logs`, `gateway_decisions`, `execution_records`, `enforcement_actions`, `enforcement_action_events` | `down/0012_…` |
 | `0013_gateway_append_only` | Append-only and finalize-once guards | `down/0013_…` |
+| `0014_approval_service` | `approval_policies`, `approval_requests`, `approval_decisions`, `approval_audit_logs`; unique `(id, organization_id)` on `incident_analysis_references` | `down/0014_…` |
+| `0015_approval_append_only` | Frozen binding, final status, append-only decisions and audit | `down/0015_…` |
 
 Apply with `pnpm --filter @corven/api db:migrate` (needs `DATABASE_URL`). Drizzle Kit has no down migrations; the `down/` scripts are hand-written, destructive, and applied newest first. The migration test applies all up, all down, then up again.
 
@@ -123,6 +125,10 @@ Tables, constraints and an ER diagram: [../modules/incident-management/data-mode
 ## Authorization & Enforcement Gateway
 
 Tables, guards and ER diagram: [../modules/authorization-enforcement/data-model.md](../modules/authorization-enforcement/data-model.md).
+
+## Approval Service
+
+See [../modules/approval-service/data-model.md](../modules/approval-service/data-model.md).
 
 ## Append-only enforcement
 

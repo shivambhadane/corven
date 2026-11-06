@@ -4,7 +4,7 @@ This covers authorization of **people and internal actors using CORVEN's API**, 
 
 ## Principal
 
-Every request resolves to a `Principal`: `{ actorId, organizationId, role }`. `organizationId` comes only from the principal, never from a body, query or URL. The role is `admin`, `operator`, `viewer`, or `system` (internal only).
+Every request resolves to a `Principal`: `{ actorId, organizationId, role }`. `organizationId` comes only from the principal, never from a body, query or URL. The role is `admin`, `operator`, `viewer`, `approver` (decides containment approvals and changes nothing else), or `system` (internal only).
 
 ## Authentication state (read this first)
 
@@ -32,6 +32,8 @@ Until real authentication exists the API must not be reachable from outside a de
 | `resource:write` | ✓ | ✓ | | |
 | `graph:read` | ✓ | ✓ | ✓ | ✓ |
 
+Later modules add (see each module's docs): `incident:*`, `gateway:read`, `permission:read/write`, `credential:manage`, `enforcement:read/apply`, and `approval:read` (all human roles), `approval:request` (admin, operator), `approval:decide` (admin, **approver**), `approval:policy` (admin). The `approver` role has read access plus `approval:decide` only.
+
 The `system` role belongs to internal modules. HTTP authenticators only ever return human roles, and a test asserts `x-dev-role: system` is rejected.
 
 ## Rules
@@ -50,7 +52,6 @@ The `system` role belongs to internal modules. HTTP authenticators only ever ret
 |---|---|
 | `discovery:read/write/run/review` | Discovery sources, runs and reviews |
 | `incident:read/write/resolve` | Incident lifecycle |
-| `approval:request`, `approval:decide` | Approval service, with optional separation of duties |
 | `verification:run` | Verification |
 | `evidence:read` | Evidence retrieval |
 | `organization:admin` | Membership management |

@@ -109,6 +109,10 @@ Full reference: [../modules/incident-management/api.md](../modules/incident-mana
 
 Full reference: [../modules/authorization-enforcement/api.md](../modules/authorization-enforcement/api.md). Agent routes authenticate with a machine token, not a human principal; enforcement is administrator-only over HTTP.
 
+## Approvals (`/approvals`, `/approval-policy`)
+
+Full reference: [../modules/approval-service/api.md](../modules/approval-service/api.md). Approval is bound to the exact plan by digest and decided only by `approver` or `admin`.
+
 ## Status codes
 
 200, 201 as above; 400 validation and over-limit requests; 401 unauthenticated; 403 forbidden; 404 not found or in another organization; 409 conflicts and invalid transitions; 422 relationship rule violations; 500 generic. The full code catalog is in [08-error-handling.md](08-error-handling.md).
@@ -119,4 +123,4 @@ No audit-log read endpoint, no hard delete, no identity-verification endpoint (i
 
 ## Planned APIs
 
-Approvals, verification and evidence are described in their module documents and are not implemented.
+Verification and evidence are described in their module documents and are not implemented.

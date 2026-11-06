@@ -27,7 +27,8 @@ The central differentiator is not detecting or disabling a compromised agent. It
 | Dependency Discovery, Graph Snapshots, Blast-Radius, Containment | Built and tested |
 | Incident Management | Built and tested |
 | Authorization & Enforcement Gateway | Built and tested; resource executors simulated |
-| Approval, Verification, Evidence | Designed in these docs, not built |
+| Approval Service | Built and tested |
+| Verification, Evidence | Designed in these docs, not built |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built |
 | Dashboard | Not built. A static landing page exists in `apps/landing` |
 | Authentication | **Development-only adapter.** No real authentication or organizations yet |
