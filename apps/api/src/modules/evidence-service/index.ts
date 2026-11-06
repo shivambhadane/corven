@@ -17,5 +17,8 @@ export { defaultEvidenceConfig, EVIDENCE_ACTOR_ID } from "./services/evidence.se
 export type { EvidenceConfig } from "./services/evidence.service.js";
 export { InMemoryArkiv, InMemoryChain, JsonRpcEthereumAnchor } from "./adapters/anchors.js";
 export type { AnchorRef, ArkivClient, EthereumAnchorClient } from "./adapters/anchors.js";
+export { loadArkivConfig, type ArkivConfig, type ArkivConfigState } from "./adapters/arkiv/config.js";
+export { SdkArkivClient, type ArkivHealth } from "./adapters/arkiv/sdk-client.js";
+export { ArkivError, classifyArkivError, type ArkivErrorCode } from "./adapters/arkiv/errors.js";
 export { EVIDENCE_ANCHOR_ABI, evidenceRef, incidentRef, ViemEthereumAnchor, type ViemAnchorConfig } from "./adapters/viem-ethereum.js";
 export * from "./types.js";

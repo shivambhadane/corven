@@ -2,6 +2,7 @@ import { buildApp } from "./app.js";
 import { devHeaderAuthenticator, failClosedAuthenticator } from "./auth/dev-auth.js";
 import { randomBytes } from "node:crypto";
 import { createDb } from "./db/client.js";
+import { loadArkivConfig, SdkArkivClient, defaultEvidenceConfig } from "./modules/evidence-service/index.js";
 import { PgBossTicker } from "./modules/orchestrator/index.js";
 import { defaultAgentAuthConfig } from "./modules/authorization-gateway/index.js";
 import { InlineJobQueue, PgBossJobQueue } from "./modules/dependency-discovery/jobs/queue.js";
@@ -32,7 +33,16 @@ if (tokenSecret && tokenSecret.length < 32) {
   process.stderr.write("AGENT_TOKEN_SECRET must decode to at least 32 bytes\n");
   process.exit(1);
 }
+// Arkiv (Rabdi DB-Chain). A real client is built only from real configuration. If Arkiv is disabled or not configured there is
+// NO fallback to an in-memory stand-in: anchoring to Arkiv simply reports that it is unavailable.
+const arkivCfg = loadArkivConfig(process.env);
+const evidenceConfig = defaultEvidenceConfig({
+  arkivState: arkivCfg.state === "configured" ? { state: "configured" } : arkivCfg.state === "disabled" ? { state: "disabled", reason: arkivCfg.reason } : { state: "not_configured", reason: arkivCfg.reason, missing: arkivCfg.missing },
+  ...(arkivCfg.state === "configured" ? { arkiv: new SdkArkivClient(arkivCfg.config, { log: (event, fields) => process.stdout.write(`${JSON.stringify({ level: "info", event, ...fields })}\n`) }) } : {}),
+  log: (event, fields) => process.stdout.write(`${JSON.stringify({ level: "info", event, ...fields })}\n`),
+});
 const app = await buildApp({
+  evidenceConfig,
   db: handle.db,
   // No production authenticator exists yet: without the dev adapter every
   // request is rejected with 401 (fail closed).
@@ -43,6 +53,8 @@ const app = await buildApp({
 });
 if (devAuth) app.log.warn("DEVELOPMENT AUTH ENABLED: request headers are trusted. Never use this in production.");
 else app.log.warn("No production authenticator is configured: all API requests will receive 401.");
+if (arkivCfg.state !== "configured") app.log.warn(`Arkiv anchoring is ${arkivCfg.state}: ${arkivCfg.reason}`);
+else if (arkivCfg.config.publicEndpoint) app.log.warn("Arkiv is using the public, rate-limited endpoint (no access key).");
 if (!tokenSecret) app.log.warn("AGENT_TOKEN_SECRET is not set: agent authentication is disabled.");
 
 // The incident-response workflow is driven by a pg-boss schedule. ORCHESTRATOR_TICKER=off leaves it to manual

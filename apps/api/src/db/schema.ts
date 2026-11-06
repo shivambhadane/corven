@@ -1312,6 +1312,16 @@ export const evidenceAnchors = pgTable(
     requiredConfirmations: integer("required_confirmations"),
     error: text("error"),
     attempts: integer("attempts").notNull().default(1),
+    /** Operational classification of the last failure (for example ARKIV_RATE_LIMITED); never contains secrets. */
+    errorCode: varchar("error_code", { length: 40 }),
+    /** False once the failure is permanent or retries are exhausted: only a person (or a configuration fix) restarts it. */
+    retryable: boolean("retryable").notNull().default(true),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    /** Transaction that created the external record (Arkiv). */
+    externalTx: varchar("external_tx", { length: 200 }),
+    /** Block at which the external record expires (Arkiv entities are not permanent). */
+    externalExpiresBlock: bigint("external_expires_block", { mode: "number" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

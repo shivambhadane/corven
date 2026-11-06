@@ -1,0 +1,1 @@
+ALTER TABLE evidence_anchors DROP COLUMN IF EXISTS external_expires_block, DROP COLUMN IF EXISTS external_tx, DROP COLUMN IF EXISTS next_attempt_at, DROP COLUMN IF EXISTS last_attempt_at, DROP COLUMN IF EXISTS retryable, DROP COLUMN IF EXISTS error_code;

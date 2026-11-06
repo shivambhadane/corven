@@ -18,11 +18,21 @@ const summary = (r: EvidenceRow) => ({
 });
 const anchorDto = (a: AnchorRow) => ({
   target: a.target, status: a.status, anchoredHash: a.anchoredHash, externalReference: a.externalReference, chainId: a.chainId, contractAddress: a.contractAddress, blockNumber: a.blockNumber,
-  confirmations: a.confirmations, requiredConfirmations: a.requiredConfirmations, error: a.error, attempts: a.attempts, updatedAt: iso(a.updatedAt),
+  confirmations: a.confirmations, requiredConfirmations: a.requiredConfirmations, error: a.error, errorCode: a.errorCode, retryable: a.retryable, attempts: a.attempts,
+  lastAttemptAt: iso(a.lastAttemptAt), nextAttemptAt: iso(a.nextAttemptAt), externalTx: a.externalTx, externalExpiresBlock: a.externalExpiresBlock, updatedAt: iso(a.updatedAt),
 });
 const Targets = Type.Optional(Type.Array(Type.Union([Type.Literal("arkiv"), Type.Literal("ethereum")]), { minItems: 1, maxItems: 2, uniqueItems: true }));
 
 export const evidenceRoutes: FastifyPluginAsyncTypebox<{ evidence: EvidenceService }> = async (app, { evidence }) => {
+  // Arkiv: connection state, counters, and entity retrieval. Declared before /evidence/:id so the literal paths win.
+  app.get("/evidence/arkiv/health", { schema: { querystring: Empty } }, async (req) => ({ data: await evidence.arkivHealth(req.principal) }));
+  app.get("/evidence/arkiv/stats", { schema: { querystring: Empty } }, async (req) => ({ data: await evidence.arkivStats(req.principal) }));
+  app.get("/evidence/arkiv/incidents/:incidentId", { schema: { params: Type.Object({ incidentId: Uuid }, strict), querystring: Empty } }, async (req) => ({ data: await evidence.arkivIncident(req.principal, req.params.incidentId) }));
+  app.get("/evidence/:id/arkiv", { schema: { params: Type.Object({ id: Uuid }, strict), querystring: Empty } }, async (req) => {
+    const { anchor, live } = await evidence.arkivEntity(req.principal, req.params.id);
+    return { data: { anchor: anchor ? anchorDto(anchor) : null, live } };
+  });
+
   app.post("/evidence/generate", { schema: { body: Type.Object({ incidentId: Uuid }, strict) } }, async (req, reply) => {
     const r = await evidence.generate(req.principal, req.body.incidentId, corr(req));
     return reply.code(201).send({ data: { ...summary(r), content: r.content } });

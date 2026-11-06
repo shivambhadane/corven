@@ -1,15 +1,25 @@
 import { randomBytes } from "node:crypto";
+import { ArkivError } from "./arkiv/errors.js";
+import type { ArkivEvidenceInput, ArkivExpected } from "./arkiv/entity.js";
+import type { ArkivHealth, ReadBackResult } from "./arkiv/sdk-client.js";
 import type { AnchorPayload } from "../types.js";
 
 /**
- * Arkiv: publishes the anchor payload as an entity and reads it back. The
- * service counts an Arkiv anchor as confirmed only when the record it reads back
- * carries the same content hash.
+ * Arkiv: stores one entity of commitments per evidence record and reads it back.
+ *
+ * An Arkiv anchor is confirmed only when the entity READ BACK from Arkiv matches the record on every field (hash,
+ * references, schema version, sequence, owner). Creating an entity is a submission, not a confirmation.
+ * `publish` must be idempotent: for evidence that already has an entity it returns that entity and creates nothing.
  */
 export interface ArkivClient {
   readonly name: string;
-  publish(payload: AnchorPayload): Promise<{ entityKey: string }>;
-  fetch(entityKey: string): Promise<AnchorPayload | null>;
+  publish(payload: AnchorPayload, input?: ArkivEvidenceInput): Promise<{ entityKey: string; txHash?: string | null; expiresAtBlock?: string | null; reused?: boolean }>;
+  readBack(entityKey: string, expected: ArkivExpected): Promise<ReadBackResult>;
+  /** Finds an entity already created for this evidence (reconciliation after a lost database write). */
+  findExisting?(expected: ArkivExpected): Promise<string | null>;
+  health?(): Promise<ArkivHealth>;
+  queryByEvidence?(evidenceId: string): Promise<Array<{ entityKey: string; owner: string }>>;
+  queryByIncident?(incidentId: string): Promise<Array<{ entityKey: string; owner: string }>>;
 }
 
 export interface AnchorRef {
@@ -48,14 +58,28 @@ export class InMemoryArkiv implements ArkivClient {
   readonly entities = new Map<string, AnchorPayload>();
   available = true;
   async publish(p: AnchorPayload) {
-    if (!this.available) throw new Error("arkiv unavailable");
+    if (!this.available) throw new ArkivError("ARKIV_NETWORK", "arkiv unavailable");
+    for (const [k, v] of this.entities) if (v.evidenceId === p.evidenceId && v.contentHash === p.contentHash) return { entityKey: k, reused: true };
     const entityKey = `0x${randomBytes(32).toString("hex")}`;
     this.entities.set(entityKey, { ...p });
-    return { entityKey };
+    return { entityKey, txHash: null, expiresAtBlock: null, reused: false };
   }
   async fetch(key: string) {
-    if (!this.available) throw new Error("arkiv unavailable");
+    if (!this.available) throw new ArkivError("ARKIV_NETWORK", "arkiv unavailable");
     return this.entities.get(key) ?? null;
+  }
+  async readBack(key: string, expected: ArkivExpected): Promise<ReadBackResult> {
+    const e = await this.fetch(key);
+    if (!e) return { outcome: "not_found" };
+    if (e.evidenceId !== expected.evidenceId) return { outcome: "mismatch", field: "evidenceRef" };
+    if (e.contentHash !== expected.contentHash) return { outcome: "mismatch", field: "evidenceHash" };
+    if (e.schemaVersion !== expected.schemaVersion) return { outcome: "mismatch", field: "schemaVersion" };
+    if (e.sequence !== expected.sequence) return { outcome: "mismatch", field: "sequence" };
+    return { outcome: "match", owner: "in-memory", expiresAtBlock: "0" };
+  }
+  async findExisting(expected: ArkivExpected) {
+    for (const [k, v] of this.entities) if (v.evidenceId === expected.evidenceId && v.contentHash === expected.contentHash) return k;
+    return null;
   }
 }
 

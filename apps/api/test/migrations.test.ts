@@ -30,7 +30,7 @@ describe("migrations", () => {
 
       // newest first
       for (const f of [
-        "0021_orchestration_append_only", "0020_orchestration",
+        "0022_arkiv_anchor_state", "0021_orchestration_append_only", "0020_orchestration",
         "0019_evidence_append_only", "0018_evidence_service",
         "0017_verification_append_only", "0016_verification_service",
         "0015_approval_append_only", "0014_approval_service",
