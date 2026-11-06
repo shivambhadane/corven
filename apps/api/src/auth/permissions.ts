@@ -19,7 +19,12 @@ export type Permission =
   | "discovery:write"
   | "discovery:run"
   | "discovery:ingest"
-  | "discovery:review";
+  | "discovery:review"
+  | "incident:read"
+  | "incident:write"
+  | "incident:transition"
+  | "incident:recover"
+  | "incident:event";
 
 const GRANTS: Record<Role | "system", ReadonlySet<Permission>> = {
   admin: new Set<Permission>([
@@ -41,6 +46,10 @@ const GRANTS: Record<Role | "system", ReadonlySet<Permission>> = {
     "discovery:run",
     "discovery:ingest",
     "discovery:review",
+    "incident:read",
+    "incident:write",
+    "incident:transition",
+    "incident:recover",
   ]),
   operator: new Set<Permission>([
     "agent:read",
@@ -59,10 +68,13 @@ const GRANTS: Record<Role | "system", ReadonlySet<Permission>> = {
     "discovery:run",
     "discovery:ingest",
     "discovery:review",
+    "incident:read",
+    "incident:write",
+    "incident:transition",
   ]),
-  viewer: new Set<Permission>(["agent:read", "dependency:read", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read"]),
-  // Internal discovery actor: reads the inventory and writes dependencies only.
-  system: new Set<Permission>(["agent:read", "dependency:read", "dependency:write", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read"]),
+  viewer: new Set<Permission>(["agent:read", "dependency:read", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read", "incident:read"]),
+  // Internal actor (discovery, and later approval, gateway, verification): reads the inventory, writes dependencies, and may publish incident events and trusted transitions.
+  system: new Set<Permission>(["agent:read", "dependency:read", "dependency:write", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read", "incident:read", "incident:write", "incident:transition", "incident:event"]),
 };
 
 export function can(principal: Principal, permission: Permission): boolean {

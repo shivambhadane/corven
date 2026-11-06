@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   check,
+  bigint,
   boolean,
   doublePrecision,
   foreignKey,
@@ -555,5 +557,252 @@ export const discoveryRuntimeEvents = pgTable(
     foreignKey({ columns: [t.sourceId, t.organizationId], foreignColumns: [discoverySources.id, discoverySources.organizationId], name: "discovery_events_source_fk" }).onDelete("restrict"),
     uniqueIndex("discovery_events_source_event_unique").on(t.sourceId, t.eventId),
     index("discovery_events_pending_idx").on(t.sourceId, t.consumedRunId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// Incident Management
+// ---------------------------------------------------------------------------
+
+const INCIDENT_STATUSES = "'detected','investigating','containment_planned','awaiting_approval','approved','containing','verifying','contained','partially_contained','containment_failed','rejected','false_positive','resolved','closed'";
+
+/**
+ * The current state of an incident. History lives in the append-only tables
+ * below; this row is the only mutable one. `version` increases on every change.
+ * The `current_*_ref_id` pointers name the analysis references that are in force;
+ * attaching a new snapshot clears the blast-radius and plan pointers because both
+ * were computed on the previous one.
+ */
+export const incidents = pgTable(
+  "incidents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    description: text("description").notNull().default(""),
+    severity: varchar("severity", { length: 16 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull().default("detected"),
+    detectionSource: varchar("detection_source", { length: 32 }).notNull(),
+    /** Id of the signal in the producing system; with the source it makes signal intake idempotent. */
+    detectionReference: varchar("detection_reference", { length: 200 }),
+    createdBy: uuid("created_by").notNull(),
+    createdByType: varchar("created_by_type", { length: 8 }).notNull(),
+    assigneeId: uuid("assignee_id"),
+    stateEnteredAt: timestamp("state_entered_at", { withTimezone: true }).notNull().defaultNow(),
+    currentSnapshotRefId: uuid("current_snapshot_ref_id"),
+    currentBlastRefId: uuid("current_blast_ref_id"),
+    currentPlanRefId: uuid("current_plan_ref_id"),
+    version: integer("version").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("incidents_id_org_unique").on(t.id, t.organizationId),
+    uniqueIndex("incidents_org_detection_unique").on(t.organizationId, t.detectionSource, t.detectionReference).where(sql`${t.detectionReference} is not null`),
+    index("incidents_org_created_idx").on(t.organizationId, t.createdAt, t.id),
+    index("incidents_org_status_idx").on(t.organizationId, t.status),
+    index("incidents_org_severity_idx").on(t.organizationId, t.severity),
+    check("incidents_status_check", sql.raw(`status in (${INCIDENT_STATUSES})`)),
+    check("incidents_severity_check", sql`${t.severity} in ('critical','high','medium','low','informational')`),
+    check("incidents_source_check", sql`${t.detectionSource} in ('manual','internal_event','runtime_signal','automated_detection')`),
+    check("incidents_created_by_type_check", sql`${t.createdByType} in ('human','system')`),
+    check("incidents_title_check", sql`length(btrim(${t.title})) > 0`),
+  ],
+);
+
+const incidentFk = (name: string, t: { incidentId: AnyPgColumn; organizationId: AnyPgColumn }) =>
+  foreignKey({ name, columns: [t.incidentId, t.organizationId], foreignColumns: [incidents.id, incidents.organizationId] }).onDelete("restrict");
+
+/** Append-only. One row per lifecycle transition. */
+export const incidentStateHistory = pgTable(
+  "incident_state_history",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    fromStatus: varchar("from_status", { length: 32 }),
+    toStatus: varchar("to_status", { length: 32 }).notNull(),
+    actorId: uuid("actor_id").notNull(),
+    actorType: varchar("actor_type", { length: 8 }).notNull(),
+    reason: text("reason").notNull(),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    idempotencyKey: varchar("idempotency_key", { length: 200 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    incidentFk("incident_state_history_incident_fk", t),
+    index("incident_state_history_idx").on(t.organizationId, t.incidentId, t.createdAt),
+    uniqueIndex("incident_state_history_idem_unique").on(t.incidentId, t.idempotencyKey).where(sql`${t.idempotencyKey} is not null`),
+    check("incident_state_history_to_check", sql.raw(`to_status in (${INCIDENT_STATUSES})`)),
+    check("incident_state_history_actor_type_check", sql`${t.actorType} in ('human','system')`),
+  ],
+);
+
+/** Append-only timeline. `seq` gives a stable total order. */
+export const incidentEvents = pgTable(
+  "incident_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    eventType: varchar("event_type", { length: 64 }).notNull(),
+    actorId: uuid("actor_id").notNull(),
+    actorType: varchar("actor_type", { length: 8 }).notNull(),
+    data: jsonb("data").notNull().default(sql`'{}'::jsonb`),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    idempotencyKey: varchar("idempotency_key", { length: 200 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    incidentFk("incident_events_incident_fk", t),
+    index("incident_events_idx").on(t.organizationId, t.incidentId, t.seq),
+    uniqueIndex("incident_events_idem_unique").on(t.incidentId, t.idempotencyKey).where(sql`${t.idempotencyKey} is not null`),
+    check("incident_events_actor_type_check", sql`${t.actorType} in ('human','system')`),
+  ],
+);
+
+/** Append-only security audit: who changed what, with before and after state. */
+export const incidentAuditLogs = pgTable(
+  "incident_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    actorId: uuid("actor_id").notNull(),
+    actorType: varchar("actor_type", { length: 8 }).notNull(),
+    action: varchar("action", { length: 64 }).notNull(),
+    targetType: varchar("target_type", { length: 32 }).notNull(),
+    targetId: uuid("target_id"),
+    beforeState: jsonb("before_state"),
+    afterState: jsonb("after_state"),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [incidentFk("incident_audit_logs_incident_fk", t), index("incident_audit_logs_idx").on(t.organizationId, t.incidentId, t.createdAt)],
+);
+
+/** Append-only. An agent can be associated under several relationships. */
+export const incidentAgents = pgTable(
+  "incident_agents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    agentId: uuid("agent_id").notNull(),
+    relationship: varchar("relationship", { length: 16 }).notNull(),
+    suspectedCompromised: boolean("suspected_compromised").notNull().default(false),
+    impact: varchar("impact", { length: 16 }).notNull(),
+    source: varchar("source", { length: 24 }).notNull(),
+    sourceReference: varchar("source_reference", { length: 500 }),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    incidentFk("incident_agents_incident_fk", t),
+    foreignKey({ name: "incident_agents_agent_fk", columns: [t.agentId, t.organizationId], foreignColumns: [agents.id, agents.organizationId] }).onDelete("restrict"),
+    unique("incident_agents_unique").on(t.incidentId, t.agentId, t.relationship),
+    index("incident_agents_agent_idx").on(t.organizationId, t.agentId),
+    check("incident_agents_relationship_check", sql`${t.relationship} in ('compromised','affected','dependent','observed','preserved')`),
+    check("incident_agents_impact_check", sql`${t.impact} in ('direct','indirect','none')`),
+    check("incident_agents_source_check", sql`${t.source} in ('manual','blast_radius','discovery','system')`),
+  ],
+);
+
+/** Append-only. `resource_type` is copied from the registry at association time. */
+export const incidentResources = pgTable(
+  "incident_resources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    resourceId: uuid("resource_id").notNull(),
+    resourceType: varchar("resource_type", { length: 32 }).notNull(),
+    relationship: varchar("relationship", { length: 16 }).notNull(),
+    impactClassification: varchar("impact_classification", { length: 24 }).notNull(),
+    source: varchar("source", { length: 24 }).notNull(),
+    sourceReference: varchar("source_reference", { length: 500 }),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    incidentFk("incident_resources_incident_fk", t),
+    foreignKey({ name: "incident_resources_resource_fk", columns: [t.resourceId, t.organizationId], foreignColumns: [resources.id, resources.organizationId] }).onDelete("restrict"),
+    unique("incident_resources_unique").on(t.incidentId, t.resourceId, t.relationship),
+    check("incident_resources_relationship_check", sql`${t.relationship} in ('exposed','affected','protected','observed')`),
+    check("incident_resources_impact_check", sql`${t.impactClassification} in ('exposed','potentially_affected','uncertain','healthy','unassessed')`),
+    check("incident_resources_source_check", sql`${t.source} in ('manual','blast_radius','discovery','system')`),
+  ],
+);
+
+/** Append-only assignment history; the current assignee is `incidents.assignee_id`. */
+export const incidentAssignments = pgTable(
+  "incident_assignments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    assigneeId: uuid("assignee_id").notNull(),
+    assignedBy: uuid("assigned_by").notNull(),
+    note: varchar("note", { length: 1000 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [incidentFk("incident_assignments_incident_fk", t), index("incident_assignments_idx").on(t.organizationId, t.incidentId, t.createdAt)],
+);
+
+/** Append-only. Notes are never edited; a correction is a new note. */
+export const incidentNotes = pgTable(
+  "incident_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    authorId: uuid("author_id").notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    incidentFk("incident_notes_incident_fk", t),
+    index("incident_notes_idx").on(t.organizationId, t.incidentId, t.createdAt),
+    check("incident_notes_content_check", sql`length(btrim(${t.content})) > 0 and length(${t.content}) <= 4000`),
+  ],
+);
+
+/**
+ * Append-only references to analysis performed for an incident. Nothing is
+ * copied: the snapshot is referenced by id and hash, and blast-radius and plan
+ * results are identified by a canonical result hash over the engines'
+ * deterministic output for the pinned snapshot and the stored input.
+ */
+export const incidentAnalysisReferences = pgTable(
+  "incident_analysis_references",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    kind: varchar("kind", { length: 24 }).notNull(),
+    /** Per incident and kind, starting at 1. */
+    version: integer("version").notNull(),
+    snapshotId: uuid("snapshot_id").notNull(),
+    snapshotHash: varchar("snapshot_hash", { length: 64 }).notNull(),
+    snapshotBuiltAt: timestamp("snapshot_built_at", { withTimezone: true }).notNull(),
+    snapshotFormatVersion: integer("snapshot_format_version").notNull(),
+    engineVersion: varchar("engine_version", { length: 32 }).notNull(),
+    input: jsonb("input").notNull().default(sql`'{}'::jsonb`),
+    resultHash: varchar("result_hash", { length: 64 }),
+    planHash: varchar("plan_hash", { length: 64 }),
+    planStatus: varchar("plan_status", { length: 24 }),
+    summary: jsonb("summary").notNull().default(sql`'{}'::jsonb`),
+    createdBy: uuid("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    incidentFk("incident_analysis_refs_incident_fk", t),
+    foreignKey({ name: "incident_analysis_refs_snapshot_fk", columns: [t.snapshotId, t.organizationId], foreignColumns: [graphSnapshots.id, graphSnapshots.organizationId] }).onDelete("restrict"),
+    unique("incident_analysis_refs_version_unique").on(t.incidentId, t.kind, t.version),
+    index("incident_analysis_refs_idx").on(t.organizationId, t.incidentId, t.kind, t.version),
+    check("incident_analysis_refs_kind_check", sql`${t.kind} in ('graph_snapshot','blast_radius','containment_plan')`),
+    check("incident_analysis_refs_hash_check", sql`${t.snapshotHash} ~ '^[0-9a-f]{64}$'`),
+    check("incident_analysis_refs_plan_check", sql`(${t.kind} = 'containment_plan') = (${t.planHash} is not null)`),
   ],
 );

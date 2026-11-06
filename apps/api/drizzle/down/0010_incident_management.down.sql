@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS incident_analysis_references;
+DROP TABLE IF EXISTS incident_notes;
+DROP TABLE IF EXISTS incident_assignments;
+DROP TABLE IF EXISTS incident_resources;
+DROP TABLE IF EXISTS incident_agents;
+DROP TABLE IF EXISTS incident_audit_logs;
+DROP TABLE IF EXISTS incident_events;
+DROP TABLE IF EXISTS incident_state_history;
+DROP TABLE IF EXISTS incidents;

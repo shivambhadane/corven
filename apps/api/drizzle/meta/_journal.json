@@ -71,6 +71,20 @@
       "when": 1793943511468,
       "tag": "0009_discovery_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793949856957,
+      "tag": "0010_incident_management",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793949857898,
+      "tag": "0011_incident_append_only",
+      "breakpoints": true
     }
   ]
 }

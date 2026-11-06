@@ -155,7 +155,9 @@ describe("snapshot integrity and immutability", () => {
     const snap = (await api.post(S, t.w, {})).body.data;
     await expect(q("update graph_snapshots set label = 'x' where id = $1", [snap.id])).rejects.toMatchObject({ code: "23001" });
     await expect(q("delete from graph_snapshots where id = $1", [snap.id])).rejects.toMatchObject({ code: "23001" });
-    await expect(q("truncate graph_snapshots")).rejects.toMatchObject({ code: "23001" });
+    // Once incident_analysis_references points at snapshots, Postgres itself refuses TRUNCATE (0A000, "referenced in a foreign key")
+    // before the append-only trigger (23001) runs. Either way the table cannot be truncated.
+    await expect(q("truncate graph_snapshots")).rejects.toMatchObject({ code: expect.stringMatching(/^(23001|0A000)$/) });
   });
 
   it("exposes no HTTP route that modifies or deletes a snapshot", async () => {

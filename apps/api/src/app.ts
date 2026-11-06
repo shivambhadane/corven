@@ -5,15 +5,20 @@ import type { Authenticator, Principal } from "./auth/principal.js";
 import type { Database } from "./db/client.js";
 import { AppError, UnauthorizedError } from "./errors.js";
 import { createAgentRegistry, registerAgentRegistry } from "./modules/agent-registry/index.js";
+import { AgentRegistryReader } from "./modules/agent-registry/readers/agent-registry.reader.js";
 import { createBlastRadius, registerBlastRadius } from "./modules/blast-radius/index.js";
 import { createContainment, registerContainment } from "./modules/containment/index.js";
 import { createDependencyDiscovery, registerDependencyDiscovery } from "./modules/dependency-discovery/index.js";
 import type { JobQueue } from "./modules/dependency-discovery/jobs/queue.js";
+import { createIncidentManagement, registerIncidentManagement } from "./modules/incident-management/index.js";
 import { createGraphSnapshots, registerGraphSnapshots } from "./modules/graph-snapshot/index.js";
 import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
 import { createDependencyRegistry, registerDependencyRegistry } from "./modules/dependency-registry/index.js";
 
 declare module "fastify" {
+  interface FastifyInstance {
+    incidentManagement: ReturnType<typeof createIncidentManagement>;
+  }
   interface FastifyRequest {
     principal: Principal;
   }
@@ -28,6 +33,7 @@ export interface BuildAppOptions {
   blastRadius?: ReturnType<typeof createBlastRadius>;
   containment?: ReturnType<typeof createContainment>;
   graphSnapshots?: ReturnType<typeof createGraphSnapshots>;
+  incidentManagement?: ReturnType<typeof createIncidentManagement>;
   discovery?: ReturnType<typeof createDependencyDiscovery>;
   /** Background queue for discovery runs. Defaults to an in-process queue; the server uses pg-boss. */
   discoveryQueue?: JobQueue;
@@ -93,8 +99,22 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
     load: async (principal: Principal, snapshotId?: string) =>
       snapshotId ? snapshots.snapshots.loadGraph(principal, snapshotId) : (await graphEngine.graphs.buildFor(principal)).graph,
   };
-  await registerBlastRadius(app, opts.blastRadius ?? createBlastRadius(liveGraph));
-  await registerContainment(app, opts.containment ?? createContainment(liveGraph));
+  const blastRadius = opts.blastRadius ?? createBlastRadius(liveGraph);
+  const containment = opts.containment ?? createContainment(liveGraph);
+  await registerBlastRadius(app, blastRadius);
+  await registerContainment(app, containment);
+  const incidents =
+    opts.incidentManagement ??
+    createIncidentManagement(opts.db, {
+      agents: new AgentRegistryReader(opts.db, registry.repo),
+      resources: { getResource: (org, id) => dependencyRegistry.resourcesRepo.find(opts.db, org, id) },
+      snapshots: snapshots.snapshots,
+      blast: blastRadius.blast,
+      containment: containment.containment,
+    });
+  await registerIncidentManagement(app, incidents);
+  // Exposed so trusted in-process modules (and tests) can use the service as the `system` principal. Never reachable over HTTP.
+  app.decorate("incidentManagement", incidents);
   const discovery = opts.discovery ?? createDependencyDiscovery(opts.db, registry.repo, dependencyRegistry, opts.discoveryQueue);
   await registerDependencyDiscovery(app, discovery);
   await discovery.start();

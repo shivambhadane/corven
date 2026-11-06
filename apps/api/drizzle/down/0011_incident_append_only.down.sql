@@ -1,0 +1,16 @@
+DROP TRIGGER IF EXISTS incident_analysis_references_no_truncate ON incident_analysis_references;
+DROP TRIGGER IF EXISTS incident_analysis_references_append_only ON incident_analysis_references;
+DROP TRIGGER IF EXISTS incident_notes_no_truncate ON incident_notes;
+DROP TRIGGER IF EXISTS incident_notes_append_only ON incident_notes;
+DROP TRIGGER IF EXISTS incident_assignments_no_truncate ON incident_assignments;
+DROP TRIGGER IF EXISTS incident_assignments_append_only ON incident_assignments;
+DROP TRIGGER IF EXISTS incident_resources_no_truncate ON incident_resources;
+DROP TRIGGER IF EXISTS incident_resources_append_only ON incident_resources;
+DROP TRIGGER IF EXISTS incident_agents_no_truncate ON incident_agents;
+DROP TRIGGER IF EXISTS incident_agents_append_only ON incident_agents;
+DROP TRIGGER IF EXISTS incident_audit_logs_no_truncate ON incident_audit_logs;
+DROP TRIGGER IF EXISTS incident_audit_logs_append_only ON incident_audit_logs;
+DROP TRIGGER IF EXISTS incident_events_no_truncate ON incident_events;
+DROP TRIGGER IF EXISTS incident_events_append_only ON incident_events;
+DROP TRIGGER IF EXISTS incident_state_history_no_truncate ON incident_state_history;
+DROP TRIGGER IF EXISTS incident_state_history_append_only ON incident_state_history;
