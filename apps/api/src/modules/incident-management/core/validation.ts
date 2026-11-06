@@ -1,4 +1,5 @@
-const SECRET_KEY = /(pass(word|phrase)?|secret|token|private[_-]?key|api[_-]?key|mnemonic|seed[_-]?phrase|credential|authorization|bearer)/i;
+// Key names that suggest a credential. Deliberately not a bare "pass", which would flag ordinary fields such as `passed`.
+const SECRET_KEY = /(passw(or)?d|passphrase|secret|token|private[_-]?key|api[_-]?key|mnemonic|seed[_-]?phrase|credential|authorization|bearer)/i;
 const SECRET_VALUE: Array<[RegExp, string]> = [
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, "a private key block"],
   [/\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/, "an AWS access key id"],

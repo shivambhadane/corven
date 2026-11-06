@@ -100,6 +100,9 @@ describe("secret guard", () => {
     expect(findSecretInData({ a: { apiKey: "x" } })).toBe("a.apiKey");
     expect(findSecretInData({ list: [{ ok: 1 }, { note: "password=abcdefgh" }] })).toBe("list[1].note");
     expect(findSecretInData({ planHash: "abc", count: 2 })).toBeNull();
+    expect(findSecretInData({ counts: { passed: 3, failed: 1 }, passive: true })).toBeNull(); // "pass" alone is not a credential
+    expect(findSecretInData({ passwd: "x" })).toBe("passwd");
+    expect(findSecretInData({ userPassword: "x" })).toBe("userPassword");
   });
 });
 

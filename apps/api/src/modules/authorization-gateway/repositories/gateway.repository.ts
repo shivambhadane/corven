@@ -26,6 +26,9 @@ export class GatewayRepository {
   async lockActiveCredential(tx: Executor, org: string, agentId: string): Promise<CredentialRow | null> {
     return one(await tx.select().from(t.agentCredentials).where(and(eq(t.agentCredentials.organizationId, org), eq(t.agentCredentials.agentId, agentId), eq(t.agentCredentials.status, "active"))).for("update"));
   }
+  async findActiveCredential(tx: Executor, org: string, agentId: string): Promise<CredentialRow | null> {
+    return one(await tx.select().from(t.agentCredentials).where(and(eq(t.agentCredentials.organizationId, org), eq(t.agentCredentials.agentId, agentId), eq(t.agentCredentials.status, "active"))));
+  }
   async revokeCredential(tx: Executor, org: string, id: string, by: string, reason: string): Promise<void> {
     await tx.update(t.agentCredentials).set({ status: "revoked", revokedAt: new Date(), revokedBy: by, revokeReason: reason }).where(and(eq(t.agentCredentials.organizationId, org), eq(t.agentCredentials.id, id)));
   }

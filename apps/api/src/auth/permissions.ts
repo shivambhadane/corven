@@ -34,7 +34,9 @@ export type Permission =
   | "approval:read"
   | "approval:request"
   | "approval:decide"
-  | "approval:policy";
+  | "approval:policy"
+  | "verification:read"
+  | "verification:run";
 
 const GRANTS: Record<Role | "system", ReadonlySet<Permission>> = {
   admin: new Set<Permission>([
@@ -70,6 +72,8 @@ const GRANTS: Record<Role | "system", ReadonlySet<Permission>> = {
     "approval:request",
     "approval:decide",
     "approval:policy",
+    "verification:read",
+    "verification:run",
   ]),
   operator: new Set<Permission>([
     "agent:read",
@@ -96,12 +100,14 @@ const GRANTS: Record<Role | "system", ReadonlySet<Permission>> = {
     "enforcement:read",
     "approval:read",
     "approval:request",
+    "verification:read",
+    "verification:run",
   ]),
-  viewer: new Set<Permission>(["agent:read", "dependency:read", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read", "incident:read", "gateway:read", "permission:read", "enforcement:read", "approval:read"]),
+  viewer: new Set<Permission>(["agent:read", "dependency:read", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read", "incident:read", "gateway:read", "permission:read", "enforcement:read", "approval:read", "verification:read"]),
   // A person who may approve or reject containment plans. Approving is all they can change.
-  approver: new Set<Permission>(["agent:read", "dependency:read", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read", "incident:read", "gateway:read", "permission:read", "enforcement:read", "approval:read", "approval:decide"]),
+  approver: new Set<Permission>(["agent:read", "dependency:read", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read", "incident:read", "gateway:read", "permission:read", "enforcement:read", "approval:read", "approval:decide", "verification:read"]),
   // Internal actor (discovery, and later approval, gateway, verification): reads the inventory, writes dependencies, and may publish incident events and trusted transitions.
-  system: new Set<Permission>(["agent:read", "dependency:read", "dependency:write", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read", "incident:read", "incident:write", "incident:transition", "incident:event", "gateway:read", "permission:read", "enforcement:read", "enforcement:apply", "approval:read"]),
+  system: new Set<Permission>(["agent:read", "dependency:read", "dependency:write", "resource:read", "graph:read", "analysis:read", "snapshot:read", "discovery:read", "incident:read", "incident:write", "incident:transition", "incident:event", "gateway:read", "permission:read", "enforcement:read", "enforcement:apply", "approval:read", "verification:read", "verification:run"]),
 };
 
 export function can(principal: Principal, permission: Permission): boolean {

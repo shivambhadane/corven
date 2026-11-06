@@ -57,3 +57,5 @@ export type { ApprovalVerifier } from "./services/enforcement.service.js";
 export type { AgentAuthConfig } from "./services/agent-auth.service.js";
 export { defaultAgentAuthConfig } from "./services/agent-auth.service.js";
 export type { ResourceExecutor, ExecutionContext, ExecutorOutcome } from "./adapters/resource-executor.js";
+export type { ProbeResult } from "./services/gateway.service.js";
+export type { ProbeOutcome } from "./adapters/resource-executor.js";

@@ -20,11 +20,23 @@ export interface ExecutorOutcome {
   result?: Record<string, unknown>;
 }
 
+export interface ProbeOutcome {
+  /** The resource answered a non-destructive request for this agent and action. */
+  reachable: boolean;
+  detail?: Record<string, unknown>;
+}
+
 export interface ResourceExecutor {
   readonly name: string;
   /** True for executors that do not touch a real system. Reported on every execution record. */
   readonly simulated: boolean;
   execute(ctx: ExecutionContext): Promise<ExecutorOutcome>;
+  /**
+   * Optional, NON-DESTRUCTIVE check used by the Verification Service: would this
+   * operation reach the resource? It must not change anything. Executors
+   * without it make positive verification inconclusive rather than assumed.
+   */
+  probe?(ctx: ExecutionContext): Promise<ProbeOutcome>;
 }
 
 export class ResourceExecutors {
@@ -42,6 +54,13 @@ export class SimulatedExecutor implements ResourceExecutor {
   readonly name = "simulated";
   readonly simulated = true;
   readonly calls: ExecutionContext[] = [];
+  readonly probes: ExecutionContext[] = [];
+  /** Tests flip this to simulate a resource that is down. */
+  reachable = true;
+  async probe(ctx: ExecutionContext): Promise<ProbeOutcome> {
+    this.probes.push(ctx);
+    return { reachable: this.reachable, detail: { simulated: true } };
+  }
   async execute(ctx: ExecutionContext): Promise<ExecutorOutcome> {
     this.calls.push(ctx);
     return { status: "executed", result: { simulated: true, echoedAction: ctx.action } };

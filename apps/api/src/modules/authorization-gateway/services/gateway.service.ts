@@ -45,6 +45,20 @@ export interface GatewayHooks {
   afterPrecheck?: (ctx: { agent: AuthenticatedAgent; request: GatewayRequest }) => Promise<void>;
 }
 
+export interface ProbeResult {
+  decisionId: string;
+  decision: "allow" | "deny";
+  reasonCodes: ReasonCode[];
+  resourceId: string | null;
+  hasCredential: boolean;
+  /** not_attempted: denied, the resource was not contacted. no_probe: allowed, but the executor cannot be probed. */
+  observed: "not_attempted" | "no_probe" | "reachable" | "unreachable" | "probe_error";
+  probeDetail?: Record<string, unknown>;
+  simulated?: boolean;
+}
+
+/** Recorded as the credential of a probe for an agent that has no active credential. */
+const NO_CREDENTIAL = "00000000-0000-0000-0000-000000000000";
 const MAX_PAYLOAD_BYTES = 16 * 1024;
 const MAX_RESULT_BYTES = 8 * 1024;
 const EXECUTOR_TIMEOUT_MS = 5000;
@@ -146,6 +160,31 @@ export class GatewayService {
       const reason = e instanceof Error ? e.message.slice(0, 300) : "executor failed";
       await finalize({ status: "failed", precheckDecisionId: pre.id, recheckDecisionId: rec.id, resourceId: rec.resourceId, executor: executor.name, simulated: executor.simulated, failureReason: reason });
       return { ...base, status: "failed", decision: this.view(rec), simulated: executor.simulated, externalReference: null, failureReason: reason, result: null };
+    }
+  }
+
+  /**
+   * For the Verification Service. Evaluates what this agent could do RIGHT NOW,
+   * through the same decision path an operation takes, using the agent's current
+   * credential state (not a token it holds). If allowed, the executor's
+   * non-destructive probe is asked whether the resource would answer. Nothing is
+   * executed. The decision is recorded like any other ("check" stage).
+   */
+  async probe(organizationId: string, agentId: string, input: { requestId: string; resource: string; action: string }): Promise<ProbeResult> {
+    const cred = await this.repo.findActiveCredential(this.db, organizationId, agentId).catch((e: unknown) => {
+      throw this.unavailable(e);
+    });
+    const agent: AuthenticatedAgent = { agentId, organizationId, credentialId: cred?.id ?? NO_CREDENTIAL, tokenId: "verification" };
+    const d = await this.decide(agent, { requestId: input.requestId, resource: input.resource, action: input.action }, "check", this.hashPayload(null), {});
+    const base = { decisionId: d.id, decision: d.decision.decision, reasonCodes: d.decision.reasonCodes, resourceId: d.resourceId, hasCredential: !!cred };
+    if (d.decision.decision === "deny") return { ...base, observed: "not_attempted" };
+    const executor = d.resourceId ? this.executors.get(d.resourceId) : undefined;
+    if (!executor?.probe) return { ...base, observed: "no_probe" };
+    try {
+      const out = await this.withTimeout(executor.probe({ organizationId, agentId, resourceId: d.resourceId!, action: input.action, payload: null, requestId: input.requestId, authorization: { decisionId: d.id, permissionId: d.decision.permissionId, permissionVersion: d.decision.permissionVersion } }));
+      return { ...base, observed: out.reachable ? "reachable" : "unreachable", probeDetail: out.detail ?? {}, simulated: executor.simulated };
+    } catch (e) {
+      return { ...base, observed: "probe_error", probeDetail: { error: e instanceof Error ? e.message.slice(0, 200) : "probe failed" } };
     }
   }
 

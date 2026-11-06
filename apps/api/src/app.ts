@@ -12,6 +12,7 @@ import { createDependencyDiscovery, registerDependencyDiscovery } from "./module
 import type { JobQueue } from "./modules/dependency-discovery/jobs/queue.js";
 import { createAuthorizationGateway, registerAuthorizationGateway, type GatewayHooks, type ResourceExecutors, type ApprovalVerifier, type AgentAuthConfig } from "./modules/authorization-gateway/index.js";
 import { createApprovalService, registerApprovalService } from "./modules/approval-service/index.js";
+import { createVerificationService, registerVerificationService } from "./modules/verification-service/index.js";
 import { createIncidentManagement, registerIncidentManagement } from "./modules/incident-management/index.js";
 import { createGraphSnapshots, registerGraphSnapshots } from "./modules/graph-snapshot/index.js";
 import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
@@ -22,6 +23,7 @@ declare module "fastify" {
     incidentManagement: ReturnType<typeof createIncidentManagement>;
     gateway: ReturnType<typeof createAuthorizationGateway>;
     approvals: ReturnType<typeof createApprovalService>;
+    verification: ReturnType<typeof createVerificationService>;
   }
   interface FastifyRequest {
     principal: Principal;
@@ -40,6 +42,7 @@ export interface BuildAppOptions {
   incidentManagement?: ReturnType<typeof createIncidentManagement>;
   gateway?: ReturnType<typeof createAuthorizationGateway>;
   approvals?: ReturnType<typeof createApprovalService>;
+  verification?: ReturnType<typeof createVerificationService>;
   /** Clock for time-based rules (approval expiry and execution windows). Tests move it; production uses real time. */
   now?: () => Date;
   /** Gateway wiring when `gateway` is not supplied. */
@@ -149,10 +152,22 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
       ...opts.gatewayOptions,
     });
   await registerAuthorizationGateway(app, gateway);
+  const verification =
+    opts.verification ??
+    createVerificationService(opts.db, incidents, {
+      prober: gateway.gateway,
+      snapshots: snapshots.snapshots,
+      lookups: {
+        agentExists: async (org, id) => (await agentReader.getAgent(org, id)) !== null,
+        resourceExists: async (org, id) => (await resourceLookup.getResource(org, id)) !== null,
+      },
+    });
+  await registerVerificationService(app, verification);
   // Exposed so trusted in-process modules (and tests) can use the service as the `system` principal. Never reachable over HTTP.
   app.decorate("incidentManagement", incidents);
   app.decorate("gateway", gateway);
   app.decorate("approvals", approvals);
+  app.decorate("verification", verification);
   const discovery = opts.discovery ?? createDependencyDiscovery(opts.db, registry.repo, dependencyRegistry, opts.discoveryQueue);
   await registerDependencyDiscovery(app, discovery);
   await discovery.start();

@@ -1177,3 +1177,80 @@ export const approvalAuditLogs = pgTable(
   },
   (t) => [index("approval_audit_logs_idx").on(t.organizationId, t.approvalId, t.seq)],
 );
+
+// ---------------------------------------------------------------------------
+// Verification Service
+// ---------------------------------------------------------------------------
+
+/**
+ * One verification of an incident's containment. Status moves pending -> running
+ * -> a final status exactly once (trigger). `result_hash` is the canonical hash
+ * of all its checks, so the evidence of what was observed can be re-verified.
+ */
+export const verificationRuns = pgTable(
+  "verification_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    approvalId: uuid("approval_id"),
+    planReferenceId: uuid("plan_reference_id").notNull(),
+    planHash: varchar("plan_hash", { length: 64 }).notNull(),
+    snapshotId: uuid("snapshot_id").notNull(),
+    snapshotHash: varchar("snapshot_hash", { length: 64 }).notNull(),
+    attempt: integer("attempt").notNull().default(1),
+    retryOf: uuid("retry_of"),
+    status: varchar("status", { length: 20 }).notNull().default("pending"),
+    summary: jsonb("summary"),
+    resultHash: varchar("result_hash", { length: 64 }),
+    incidentOutcome: varchar("incident_outcome", { length: 32 }),
+    incidentSynced: boolean("incident_synced").notNull().default(false),
+    idempotencyKey: varchar("idempotency_key", { length: 200 }),
+    requestedBy: uuid("requested_by").notNull(),
+    requestedByType: varchar("requested_by_type", { length: 8 }).notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("verification_runs_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({ name: "verification_runs_incident_fk", columns: [t.incidentId, t.organizationId], foreignColumns: [incidents.id, incidents.organizationId] }).onDelete("restrict"),
+    foreignKey({ name: "verification_runs_plan_fk", columns: [t.planReferenceId, t.organizationId], foreignColumns: [incidentAnalysisReferences.id, incidentAnalysisReferences.organizationId] }).onDelete("restrict"),
+    foreignKey({ name: "verification_runs_approval_fk", columns: [t.approvalId, t.organizationId], foreignColumns: [approvalRequests.id, approvalRequests.organizationId] }).onDelete("restrict"),
+    uniqueIndex("verification_runs_idem").on(t.organizationId, t.idempotencyKey).where(sql`${t.idempotencyKey} is not null`),
+    uniqueIndex("verification_runs_one_active").on(t.organizationId, t.incidentId).where(sql`${t.status} in ('pending','running')`),
+    index("verification_runs_incident_idx").on(t.organizationId, t.incidentId, t.createdAt),
+    check("verification_runs_status_check", sql`${t.status} in ('pending','running','passed','failed','partially_verified','inconclusive')`),
+  ],
+);
+
+/** Append-only. Each check is written once, with its definition and what was actually observed. */
+export const verificationChecks = pgTable(
+  "verification_checks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    runId: uuid("run_id").notNull(),
+    seq: integer("seq").notNull(),
+    category: varchar("category", { length: 32 }).notNull(),
+    purpose: varchar("purpose", { length: 16 }).notNull(),
+    agentId: uuid("agent_id"),
+    resourceId: uuid("resource_id"),
+    action: varchar("action", { length: 64 }),
+    expected: varchar("expected", { length: 16 }).notNull(),
+    actual: varchar("actual", { length: 32 }).notNull(),
+    result: varchar("result", { length: 16 }).notNull(),
+    detail: jsonb("detail").notNull().default(sql`'{}'::jsonb`),
+    executionReference: varchar("execution_reference", { length: 200 }),
+    limitation: text("limitation"),
+    observedAt: timestamp("observed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ name: "verification_checks_run_fk", columns: [t.runId, t.organizationId], foreignColumns: [verificationRuns.id, verificationRuns.organizationId] }).onDelete("restrict"),
+    unique("verification_checks_seq_unique").on(t.runId, t.seq),
+    check("verification_checks_category_check", sql`${t.category} in ('NEGATIVE_ACCESS_TEST','POSITIVE_ACCESS_TEST','PERMISSION_PERSISTENCE_TEST','PATH_BLOCK_TEST','RESOURCE_HEALTH_TEST','BYPASS_RESISTANCE_TEST')`),
+    check("verification_checks_purpose_check", sql`${t.purpose} in ('security','continuity')`),
+    check("verification_checks_result_check", sql`${t.result} in ('passed','failed','inconclusive')`),
+  ],
+);
