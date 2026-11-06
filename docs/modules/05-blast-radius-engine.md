@@ -1,6 +1,6 @@
 # Blast-Radius Engine
 
-**Status: implemented and tested** (`apps/api/src/modules/blast-radius`, `POST /api/v1/blast-radius/analyze`; optional `snapshotId`). The text below is the original design; detailed per-module docs are still to be written. Builds directly on the implemented Graph Engine; no new storage is required beyond persisting results with an incident.
+**Status: implemented and tested** (`apps/api/src/modules/blast-radius`, `POST /api/v1/blast-radius/analyze`; optional `snapshotId`). The sections up to **Implementation** are the original design; the **Implementation** section at the end records what was built. Builds directly on the implemented Graph Engine; no new storage is required beyond persisting results with an incident.
 
 ## Purpose
 
@@ -63,3 +63,20 @@ Pure function over the graph: no database, no Fastify. Deterministic for identic
 ## Tests to write
 
 Each class on small hand-built graphs; shared resource dependents listed; operational-only reach is `potentially_affected`; low-confidence edges give `uncertain`; cycles terminate; determinism; the Acme demo graph from [project/04-demo-script.md](../project/04-demo-script.md) as a golden test.
+
+## Implementation
+
+Code: `apps/api/src/modules/blast-radius`. Pure function `analyzeBlastRadius(graph, sourceNodeIds, options)` over an immutable graph; the service loads the live graph or a stored snapshot.
+
+**Endpoint:** `POST /api/v1/blast-radius/analyze` (needs `analysis:read`; read-only, stores nothing). Body `{sourceNodeIds (1-50 agent ids), confidenceThreshold? (0-1, default 0.5), staleAfterHours?, snapshotId?}`. Unknown fields are a 400; an unknown node is `NODE_NOT_FOUND` 404.
+
+**Classification**
+- `compromised`: the given agents.
+- `exposed`: reachable through authority or resource dependencies (what the compromised agent could use).
+- `potentially_affected`: reachable only through operational dependencies.
+- `uncertain`: reached only through edges below the confidence threshold or older than the freshness window, and delegators of compromised or exposed agents (inherited authority is not modelled). `wouldBe` says what the node would be if the weak edges are real.
+- `healthy`: not reached. This does not prove isolation.
+
+Each impacted node carries its depth, exposure kinds, a shortest explaining path and reasons. `sharedResources` lists other dependents of each exposed resource without claiming they are compromised. Every result includes the `limitations` list: reachability is structural, only registered dependencies are visible, inherited authority is not modelled, thresholds are policy values.
+
+**Tests:** `blast-radius-core.test.ts`, `blast-radius-api.test.ts`.

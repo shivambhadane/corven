@@ -8,7 +8,7 @@ The Dependency Registry stores validated, versioned relationships between agents
 
 **Implemented here:** dependency CRUD (soft removal), three typed relationship kinds, relationship validation, authority-cycle prevention, provenance/confidence/freshness, per-change version history, append-only audit, and a *minimum* resource model.
 
-**Not implemented here (other modules):** Dependency Discovery itself (its prerequisites are in section 16), graph snapshots, blast-radius analysis and containment, and resource management beyond create and read. The Graph Engine is a separate, implemented module that **reads** this registry; see [graph-engine/](graph-engine/README.md).
+**Not implemented here (other modules):** Dependency Discovery ([dependency-discovery.md](dependency-discovery.md); its registry prerequisites are in section 16), graph snapshots ([graph-snapshot.md](graph-snapshot.md)), blast-radius analysis and containment (modules 05 and 06), and resource management beyond create and read. The Graph Engine is a separate, implemented module that **reads** this registry; see [graph-engine/](graph-engine/README.md).
 
 ## 2. Responsibilities
 
@@ -168,7 +168,7 @@ Same envelope and safe-error rules as Module 1: `AppError` subclasses carry clie
 ## 15. Future integration
 
 - **Dependency Discovery** will create `discovered`/`inferred` dependencies through `DependencyService.create` with `provenance` and `confidence`; nothing here performs discovery.
-- **Graph Engine** (implemented, [graph-engine/](graph-engine/README.md)) reads `dependencies` (all statuses, with type, confidence and provenance) and builds the structural graph; traversal, reachability, paths, components and cycles live there, and the authority cycle check in this module is not a substitute for them. **Graph snapshots** (planned) will persist immutable graphs from the Graph Engine's export; they will not read this registry directly.
+- **Graph Engine** (implemented, [graph-engine/](graph-engine/README.md)) reads `dependencies` (all statuses, with type, confidence and provenance) and builds the structural graph; traversal, reachability, paths, components and cycles live there, and the authority cycle check in this module is not a substitute for them. **Graph snapshots** (implemented) persist immutable graphs from the Graph Engine's export and do not read this registry directly.
 - **Blast-radius and containment** will rely on the distinction between `authority`, `resource` and `operational` edges and on `metadata.scope` / `metadata.accessLevel`.
 - **Evidence Service** will hash `dependency_versions` / `dependency_audit_logs`.
 

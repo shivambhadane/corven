@@ -12,6 +12,10 @@ Source: `apps/api/src/db/schema.ts` (Drizzle) and the SQL in `apps/api/drizzle/`
 | `0003_dependency_append_only` | Triggers on dependency versions and audit logs | `down/0003_…` |
 | `0004_discovery_prerequisites` | `external_reference`, `owner_reference`, `runtime_type` on agents; `external_reference`, `metadata` on resources; `mcp_server` and `queue` resource types; `dependency_evidence` | `down/0004_…` |
 | `0005_evidence_append_only` | Triggers on `dependency_evidence` | `down/0005_…` |
+| `0006_graph_snapshots` | `graph_snapshots` | `down/0006_…` |
+| `0007_snapshot_append_only` | Triggers on `graph_snapshots` | `down/0007_…` |
+| `0008_dependency_discovery` | `discovery_sources`, `discovery_runs`, `discovery_observations`, `discovery_reconciliation_results`, `discovery_reviews`, `discovery_runtime_events` | `down/0008_…` |
+| `0009_discovery_append_only` | Triggers on reconciliation results and reviews | `down/0009_…` |
 
 Apply with `pnpm --filter @corven/api db:migrate` (needs `DATABASE_URL`). Drizzle Kit has no down migrations; the `down/` scripts are hand-written, destructive, and applied newest first. The migration test applies all up, all down, then up again.
 
@@ -90,9 +94,27 @@ Indexes on `(org, source…)`, `(org, target…)`, `(org, dependency_type, statu
 ### `dependency_evidence` (append-only)
 `id`, `organization_id`, `dependency_id`, `source_type` (`manual`, `agent_configuration`, `workflow_definition`, `permission_configuration`, `runtime_event`, `external_integration`), `source_reference`, `discovery_run_id` (no FK until discovery tables exist), `evidence_kind` (`declared`, `configured`, `observed`), `evidence_reference`, `source_version`, `confidence` (CHECK 0 to 1), `observed_at`, `created_at`. Partial unique index on `(dependency_id, discovery_run_id, source_type, coalesce(source_reference, ''))` where the run id is set, so retries cannot duplicate.
 
+## Graph snapshots
+
+### `graph_snapshots` (append-only)
+`id`, `organization_id`, `label`, `incident_id` (not yet a foreign key), `created_by`, `node_count`, `edge_count`, `content_hash` (CHECK length 64), `payload` jsonb (the graph export), `built_at`, `created_at`. Unique `(id, organization_id)`; indexes on `(org, created_at, id)` and `(org, incident_id)`. The hash is verified on every load. See [../modules/graph-snapshot.md](../modules/graph-snapshot.md).
+
+## Dependency Discovery
+
+See [../modules/dependency-discovery.md](../modules/dependency-discovery.md) for behaviour.
+
+- `discovery_sources`: per organization; `type` (`agent_configuration`, `workflow_definition`, `runtime_gateway`), `name` (unique per organization), `configuration` jsonb, `enabled`, `freshness_window_hours`, `last_successful_run_at`.
+- `discovery_runs`: `source_id`, `status` (`pending`, `running`, `completed`, `completed_with_errors`, `failed`, `cancelled`), `summary` jsonb, `error_summary`, timestamps. A **partial unique index allows one active run per source**.
+- `discovery_observations`: one per collected record: normalized proposal, `resolved` (matched entities and confidence), `processing_status` (`normalized`, `unresolved`, `rejected`, `pending_review`, `applied`, `review_rejected`), `reconciliation_outcome`, `registry_outcome`, redacted and size-limited `raw_evidence`.
+- `discovery_reconciliation_results` (append-only): outcome and reason per observation or per missing/stale dependency.
+- `discovery_reviews` (append-only): reviewer, decision (`approve`, `reject`, `defer`), reason.
+- `discovery_runtime_events`: ingested gateway events, unique `(source_id, event_id)`, redacted payload, `consumed_run_id` so each event is read once.
+
+All carry `organization_id` with composite foreign keys.
+
 ## Append-only enforcement
 
-`corven_reject_mutation()` raises `restrict_violation` (SQLSTATE 23001). Row triggers reject `UPDATE` and `DELETE`, and statement triggers reject `TRUNCATE`, on: `agent_status_history`, `agent_audit_logs`, `dependency_versions`, `dependency_audit_logs`, `dependency_evidence`. Because parents are never hard-deleted (foreign keys are `RESTRICT`), history cannot be orphaned or erased through the normal path. A database superuser can still bypass triggers; see the threat model.
+`corven_reject_mutation()` raises `restrict_violation` (SQLSTATE 23001). Row triggers reject `UPDATE` and `DELETE`, and statement triggers reject `TRUNCATE`, on: `agent_status_history`, `agent_audit_logs`, `dependency_versions`, `dependency_audit_logs`, `dependency_evidence`, `graph_snapshots`, `discovery_reconciliation_results`, `discovery_reviews`. Because parents are never hard-deleted (foreign keys are `RESTRICT`), history cannot be orphaned or erased through the normal path. A database superuser can still bypass triggers; see the threat model.
 
 ## What is not stored
 

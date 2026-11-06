@@ -27,6 +27,11 @@ External attacker with network access; malicious or compromised tenant user; com
 | T5 | Tampering: mass assignment (set status, org, version) | `additionalProperties:false`, rejected not ignored | Built |
 | T6 | Tampering: forged dependency makes the graph wrong | Per-type rules, endpoint existence in the org, authority cycle prevention, provenance and confidence; discovery cannot create authority edges from weak sources | Built (partly) |
 | T7 | Tampering: a compromised discovery source plants false edges | Confidence from strongest evidence, no auto-reactivation, human review for uncertain findings, a failed source never deactivates | Partly built; review planned |
+| T7a | Tampering: stored graph snapshot altered after an incident | Immutable triggers; SHA-256 content hash verified on every load; analyses refuse a snapshot that fails | Built (not against a DB superuser; no signing) |
+| T7b | Tampering: discovery silently removes real dependencies | Missing or stale findings are recorded, never deactivated; failed runs change nothing; inactive dependencies are not auto-reactivated | Built, tested |
+| T7c | Tampering: discovery grants authority | Discovery cannot create authority edges; entities are never created from observations | Built, tested |
+| T7d | Information disclosure: secrets in ingested events | Secret-looking fields redacted and payload size-limited before storage | Built, tested |
+| T7e | Tampering: containment plan wrongly reported as safe | Plan re-verified after the cut; checked against brute force; workflow preservation is sound but incomplete; plan is advisory and hash-bound for future approval | Built; approval binding planned |
 | T8 | **Repudiation:** denying an action | Actor on every version, audit and status row; internal actor distinguishes automation | Built |
 | T9 | **Information disclosure:** cross-tenant read | Org scoping; 404 for foreign ids; composite FKs | Built, tested |
 | T10 | Disclosure: SQL or stack leakage in errors | Safe messages, generic 500, cause logged server-side only | Built, tested |
@@ -38,7 +43,7 @@ External attacker with network access; malicious or compromised tenant user; com
 | T16 | Elevation: approval reused for a different plan | Approval bound to plan hash | Planned |
 | T17 | Race: two requests create an authority cycle | Per-organization advisory lock (tested) | Built |
 | T18 | Race: concurrent status changes | Row lock; exactly one wins (tested) | Built |
-| T19 | Unauthenticated runtime events accepted as evidence | Authenticated producers, unique event ids, signature checks | Planned |
+| T19 | Unauthenticated runtime events accepted as evidence | Unique event ids, redaction, 0.65 confidence for attempted/denied and human review below 0.8. Producer authentication and signatures | **Partly built.** Ingestion needs `discovery:ingest` (human roles today); event authenticity is planned with the gateway |
 | T20 | A false "contained" status | Distinct planned/approved/submitted/executed/verified; verification required | Planned |
 | T21 | Supply chain: malicious dependency | Lockfile, scanning in CI | **No CI yet** |
 | T22 | LLM manipulation influences decisions | LLM never approves, enforces or decides ownership | Policy; no LLM in the code |

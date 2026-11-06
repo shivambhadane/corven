@@ -77,6 +77,30 @@ Full reference with parameters, responses and errors: [../modules/graph-engine/a
 
 Limits: traversal depth ≤ 100, `maxCycles` ≤ 500, cycle length ≤ 50.
 
+## Graph snapshots (`/graph/snapshots`)
+
+Details: [../modules/graph-snapshot.md](../modules/graph-snapshot.md). `snapshot:read` / `snapshot:write`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/` | Create `{label?, incidentId?}` (201) |
+| GET | `/`, `/:snapshotId` | List, metadata |
+| GET | `/:snapshotId/graph` | Stored nodes and edges (hash verified first) |
+| GET | `/:snapshotId/verify` | Recompute and compare the hash |
+| GET | `/:fromId/diff/:toId` | Added, removed, changed ids |
+
+## Blast radius (`/blast-radius`)
+
+`POST /analyze` with `analysis:read`. Body `{sourceNodeIds, confidenceThreshold?, staleAfterHours?, snapshotId?}`. Read-only. Details: [../modules/05-blast-radius-engine.md](../modules/05-blast-radius-engine.md).
+
+## Containment (`/containment`)
+
+`POST /plan` with `analysis:read`. Body `{sourceNodeIds, protectedNodeIds?, healthyWorkflows?, coverage?, options?, snapshotId?}`. Returns an advisory plan with a `planHash`; enforces nothing. Details: [../modules/06-containment-engine.md](../modules/06-containment-engine.md).
+
+## Discovery (`/discovery`)
+
+Sources, events, runs, observations, results, review and coverage. Full table with permissions: [../modules/dependency-discovery.md](../modules/dependency-discovery.md). `POST .../runs` returns 202 and the run executes in the background.
+
 ## Status codes
 
 200, 201 as above; 400 validation and over-limit requests; 401 unauthenticated; 403 forbidden; 404 not found or in another organization; 409 conflicts and invalid transitions; 422 relationship rule violations; 500 generic. The full code catalog is in [08-error-handling.md](08-error-handling.md).
@@ -87,4 +111,4 @@ No audit-log read endpoint, no hard delete, no identity-verification endpoint (i
 
 ## Planned APIs
 
-Discovery (`/discovery/*`), incidents, approvals, verification and evidence are described in their module documents and are not implemented.
+Incidents, approvals, verification and evidence are described in their module documents and are not implemented.

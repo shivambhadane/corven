@@ -1,6 +1,6 @@
 # Containment Engine
 
-**Status: planned (design).** This is CORVEN's central technical capability and the riskiest module. The algorithm below is a **proposal for review**, chosen to be exactly solvable and explainable. **Status update: implemented and tested** (`apps/api/src/modules/containment`, `POST /api/v1/containment/plan`; Dinic max-flow minimum cut, verified against brute force). Per-module docs are still to be written. Workflow preservation is sound but not complete, and plans are advisory: nothing is enforced until the gateway exists.
+**Status: planned (design).** This is CORVEN's central technical capability and the riskiest module. The algorithm below is a **proposal for review**, chosen to be exactly solvable and explainable. **Status update: implemented and tested** (`apps/api/src/modules/containment`, `POST /api/v1/containment/plan`; Dinic max-flow minimum cut, verified against brute force). Workflow preservation is sound but not complete, and plans are advisory: nothing is enforced until the gateway exists.
 
 ## Purpose
 
@@ -93,3 +93,21 @@ Hand-built graphs with known minimum cuts; the Acme scenario (cut only Payment's
 - Cost model: flat cost 1, per-edge weights, or impact scores?
 - Which entities are protected by default?
 - Do we need the exact (integer programming) formulation, or is the conservative one enough?
+
+## Implementation
+
+Code: `apps/api/src/modules/containment`. Pure function `planContainment(graph, {sourceNodeIds, protectedNodeIds, healthyWorkflows?, coverage?, options?})`.
+
+**Endpoint:** `POST /api/v1/containment/plan` (needs `analysis:read`; read-only and **advisory**: it enforces nothing and stores nothing). Optional `snapshotId`. If `protectedNodeIds` is omitted it defaults to the exposed resources and the response sets `protectedWasDefaulted`.
+
+**Algorithm:** minimum s-t cut by Dinic max-flow over active edges. Edges that must be preserved (healthy workflows) or cannot be controlled get infinite capacity (1e12). The plan uses the unique minimum cut closest to the compromised agents (smallest source side). Verified against brute-force enumeration on small graphs; a 1,000-node / 5,000-edge graph plans in about 30 ms.
+
+**Workflow preservation is sound, not complete.** For each healthy workflow one preferred path is fixed and made uncuttable. If the plan satisfies the workflows it reports `satisfied: true`; some workflows that a cleverer path choice could preserve may be reported as blocked.
+
+**Outcomes:** `feasible`, `no_action_needed`, or `infeasible` with `blockers` (a shortest attack path made only of edges that are preserved or not controllable). Each action reports kind (`revoke_authority`, `revoke_resource_access`, `block_operational_trigger`), cost, confidence, an example attack path, and whether a healthy agent loses access.
+
+**Approval reasons:** `affects_healthy_agent`, `uncertain_dependency`, `high_value_target`, `cost_threshold`, `uncertain_dependencies_in_attack_region`. The plan's `approvalRequired` is true if any applies. The result carries a verification block (protected nodes unreachable after the cut, workflows still satisfied) and a deterministic `planHash` (SHA-256 of canonical JSON, stable under reordering) intended to bind a future approval.
+
+**Coverage:** until the Authorization Gateway reports real enforcement coverage, every edge is assumed controllable at cost 1. Pass `coverage.uncontrollableEdgeIds` or `edgeCosts` to model gaps. A plan is therefore only as real as that assumption.
+
+**Tests:** `containment-core.test.ts` (incl. brute-force comparison, performance), `containment-api.test.ts`.
