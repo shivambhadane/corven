@@ -180,8 +180,36 @@ export class ViemEthereumAnchor implements EthereumAnchorClient {
   }
 }
 
+
 const notFoundAsNull = (e: unknown): null => {
   const name = (e as { name?: string }).name ?? "";
   if (name === "TransactionNotFoundError" || name === "TransactionReceiptNotFoundError") return null;
   throw e;
 };
+
+export type EthereumConfigState =
+  | { state: "disabled"; reason: string }
+  | { state: "not_configured"; missing: string[]; reason: string }
+  | { state: "configured"; client: ViemEthereumAnchor };
+
+export function loadEthereumConfig(env: Record<string, string | undefined> = process.env): EthereumConfigState {
+  if (env.ETHEREUM_ENABLED?.trim().toLowerCase() === "false") return { state: "disabled", reason: "ETHEREUM_ENABLED=false" };
+  const rpcUrl = (env.ETHEREUM_SEPOLIA_RPC_URL ?? env.ETHEREUM_RPC_URL ?? "").trim();
+  const contractAddress = (env.EVIDENCE_ANCHOR_CONTRACT_ADDRESS ?? env.ETHEREUM_CONTRACT ?? "").trim();
+  const chainId = env.ETHEREUM_CHAIN_ID ? Number(env.ETHEREUM_CHAIN_ID) : 11155111;
+  const privateKey = (env.ETHEREUM_SIGNER_PRIVATE_KEY ?? "").trim() || undefined;
+
+  const missing: string[] = [];
+  if (!rpcUrl) missing.push("ETHEREUM_SEPOLIA_RPC_URL");
+  if (!contractAddress) missing.push("EVIDENCE_ANCHOR_CONTRACT_ADDRESS");
+  if (missing.length > 0) {
+    return { state: "not_configured", missing, reason: `Missing Ethereum configuration: ${missing.join(", ")}` };
+  }
+
+  try {
+    const client = new ViemEthereumAnchor({ rpcUrl, chainId, contractAddress, privateKey });
+    return { state: "configured", client };
+  } catch (e) {
+    return { state: "not_configured", missing: [], reason: (e as Error).message };
+  }
+}

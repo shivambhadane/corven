@@ -2,7 +2,7 @@ import { buildApp } from "./app.js";
 import { devHeaderAuthenticator, failClosedAuthenticator } from "./auth/dev-auth.js";
 import { randomBytes } from "node:crypto";
 import { createDb } from "./db/client.js";
-import { loadArkivConfig, SdkArkivClient, defaultEvidenceConfig } from "./modules/evidence-service/index.js";
+import { loadArkivConfig, SdkArkivClient, defaultEvidenceConfig, loadEthereumConfig } from "./modules/evidence-service/index.js";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { ResourceExecutors, SimulatedExecutor } from "./modules/authorization-gateway/index.js";
@@ -39,9 +39,12 @@ if (tokenSecret && tokenSecret.length < 32) {
 // Arkiv (Rabdi DB-Chain). A real client is built only from real configuration. If Arkiv is disabled or not configured there is
 // NO fallback to an in-memory stand-in: anchoring to Arkiv simply reports that it is unavailable.
 const arkivCfg = loadArkivConfig(process.env);
+// Ethereum (Sepolia / Anvil). A client is constructed when the RPC URL and contract address are configured.
+const ethCfg = loadEthereumConfig(process.env);
 const evidenceConfig = defaultEvidenceConfig({
   arkivState: arkivCfg.state === "configured" ? { state: "configured" } : arkivCfg.state === "disabled" ? { state: "disabled", reason: arkivCfg.reason } : { state: "not_configured", reason: arkivCfg.reason, missing: arkivCfg.missing },
   ...(arkivCfg.state === "configured" ? { arkiv: new SdkArkivClient(arkivCfg.config, { log: (event, fields) => process.stdout.write(`${JSON.stringify({ level: "info", event, ...fields })}\n`) }) } : {}),
+  ...(ethCfg.state === "configured" ? { ethereum: ethCfg.client } : {}),
   log: (event, fields) => process.stdout.write(`${JSON.stringify({ level: "info", event, ...fields })}\n`),
 });
 // Resource executors. No real external resource is wired yet; under development auth every resource gets a SimulatedExecutor
@@ -51,7 +54,7 @@ if (devAuth && process.env.CORVEN_SIMULATED_EXECUTORS !== "0") executors.setDefa
 
 // The landing page and the built console are served from the same origin when present.
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
-const landingDir = process.env.CORVEN_LANDING_DIR ?? `${repoRoot}landing`;
+const landingDir = process.env.CORVEN_LANDING_DIR ?? `${repoRoot}apps/landing`;
 const consoleDir = process.env.CORVEN_CONSOLE_DIR ?? `${repoRoot}apps/console/dist`;
 const web = { landingDir: existsSync(`${landingDir}/index.html`) ? landingDir : undefined, consoleDir: existsSync(`${consoleDir}/index.html`) ? consoleDir : undefined };
 
@@ -70,6 +73,8 @@ if (devAuth) app.log.warn("DEVELOPMENT AUTH ENABLED: request headers are trusted
 else app.log.warn("No production authenticator is configured: all API requests will receive 401.");
 if (arkivCfg.state !== "configured") app.log.warn(`Arkiv anchoring is ${arkivCfg.state}: ${arkivCfg.reason}`);
 else if (arkivCfg.config.publicEndpoint) app.log.warn("Arkiv is using the public, rate-limited endpoint (no access key).");
+if (ethCfg.state === "configured") app.log.info(`Ethereum anchoring configured (contract: ${ethCfg.client.contractAddress}, signer: ${ethCfg.client.signerAddress ?? "read-only"})`);
+else app.log.warn(`Ethereum anchoring is ${ethCfg.state}: ${ethCfg.reason}`);
 if (!tokenSecret) app.log.warn("AGENT_TOKEN_SECRET is not set: agent authentication is disabled.");
 
 // The incident-response workflow is driven by a pg-boss schedule. ORCHESTRATOR_TICKER=off leaves it to manual

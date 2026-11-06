@@ -2,12 +2,11 @@ import { useState } from "react";
 import { api, session, type Session } from "./api";
 import { go } from "./app";
 import { seedAcme } from "./demo";
-import { Card, Empty, Err, Pill, short, useAction, useLoad, when } from "./ui";
+import { askReason, Card, Empty, Err, Lifecycle, Loading, Pill, short, showInfo, toast, useAction, useLoad, when } from "./ui";
 
 const me = () => session() as Session;
 const demoKey = () => `corven.demo.${me().org}`;
 const loadDemo = () => JSON.parse(localStorage.getItem(demoKey()) ?? "null") as null | Record<string, string>;
-const reason = (what: string) => window.prompt(`Reason for ${what}`, what)?.trim();
 
 // ---------------------------------------------------------------------------------------------- Overview
 export function Overview() {
@@ -29,12 +28,13 @@ export function Overview() {
     setLog([]);
     const ids = await seedAcme(me(), (m) => setLog((l) => [...l, m]));
     localStorage.setItem(demoKey(), JSON.stringify(ids));
-  }, d.reload);
+  }, d.reload, "Demo network loaded");
   const compromise = () => act.run(async () => {
     const ids = loadDemo()!;
     const inc = (await api.post("/incidents", { title: "Support agent compromised", description: "Unexpected transfer requests observed from the support agent.", severity: "critical", agents: [{ agentId: ids.support, relationship: "compromised" }] })).data;
     const wf = (await api.post("/workflows", { incidentId: inc.id })).data;
     await api.post(`/workflows/${wf.id}/run`);
+    toast("Incident raised and analysis started", "ok");
     go(`incident/${inc.id}`);
   });
 
@@ -120,8 +120,8 @@ export function IncidentDetail({ id }: { id: string }) {
     return { inc: inc.data, timeline: timeline.data as any[], agents: agents.data as any[], workflow: workflow?.data ?? null, approvals: approvals.data as any[], runs: (runs?.data ?? []) as any[], evidence: ev };
   }, [id]);
   const act = useAction();
-  const run = (fn: () => Promise<unknown>) => act.run(fn, d.reload);
-  if (!d.data) return <><h1>Incident</h1><Err e={d.error} />{d.loading && <p className="muted">Loading…</p>}</>;
+  const run = (fn: () => Promise<unknown>, _then?: undefined, okMsg?: string) => act.run(fn, d.reload, okMsg);
+  if (!d.data) return <><h1>Incident</h1><Err e={d.error} />{d.loading && <Loading />}</>;
   const { inc, timeline, agents, workflow, approvals, runs, evidence } = d.data;
   const role = me().role;
   const canWrite = role === "admin" || role === "operator";
@@ -130,8 +130,8 @@ export function IncidentDetail({ id }: { id: string }) {
     <>
       <h1>{inc.title} <Pill v={inc.severity} /> <Pill v={inc.status} /></h1>
       <p className="muted mono">incident {inc.id} · {inc.detectionSource} · created {when(inc.createdAt)}</p>
-      <Err e={act.error} />
-      {act.busy && <p className="muted">Working…</p>}
+      <Lifecycle status={inc.status} hasPlan={!!inc.current.containmentPlan} hasEvidence={evidence.length > 0} />
+      {act.busy && <p className="muted"><span className="spin" />Working…</p>}
 
       <div className="grid2">
         <Card title="Automated response" actions={canWrite && (workflow
@@ -149,7 +149,7 @@ export function IncidentDetail({ id }: { id: string }) {
 
         <Card title="Lifecycle">
           <div className="row wrap">
-            {canWrite && (inc.availableTransitions as any[]).map((t) => <button key={t.to} onClick={() => { const r = reason(`moving to ${t.to}`); if (r) run(() => api.post(`/incidents/${id}/transition`, { to: t.to, reason: r, ...(t.to === "resolved" && inc.status === "partially_contained" ? { acknowledgeResidualRisk: true } : {}) })); }}>→ {t.to}</button>)}
+            {canWrite && (inc.availableTransitions as any[]).map((t) => <button key={t.to} onClick={async () => { const r = await askReason(`Move incident to ${t.to}`, `Move to ${t.to}`); if (r) run(() => api.post(`/incidents/${id}/transition`, { to: t.to, reason: r, ...(t.to === "resolved" && inc.status === "partially_contained" ? { acknowledgeResidualRisk: true } : {}) }), undefined, `Moved to ${t.to}`); }}>→ {t.to}</button>)}
             {(inc.availableTransitions as any[]).length === 0 && <Empty>No transitions available to your role from here.</Empty>}
           </div>
           <h3>Analysis</h3>
@@ -180,7 +180,7 @@ export function IncidentDetail({ id }: { id: string }) {
           <div key={e.id} className="evidence">
             <p>#{e.sequence} <Pill v={e.status} /> <span className="mono">sha256 {e.contentHash.slice(0, 16)}…</span> <span className="muted">{when(e.createdAt)}</span></p>
             <div className="row wrap">
-              <button onClick={() => run(async () => { const v = (await api.post(`/evidence/${e.id}/verify`, {})).data; alert(`${v.valid ? "VALID" : "INVALID"}\n\n${v.steps.map((s: any) => `${s.name}: ${s.result}`).join("\n")}`); })}>Verify integrity</button>
+              <button onClick={() => run(async () => { const v = (await api.post(`/evidence/${e.id}/verify`, {})).data; await showInfo(v.valid ? "Evidence is valid" : "Evidence FAILED verification", v.steps.map((s: any) => `${s.result === "passed" ? "✓" : s.result === "failed" ? "✗" : "…"} ${s.name}`).join("\n")); })}>Verify integrity</button>
               {role === "admin" && <button onClick={() => run(() => api.post(`/evidence/${e.id}/anchor`, { targets: ["arkiv"] }))}>Anchor on Arkiv</button>}
               {role === "admin" && <button onClick={() => run(() => api.post(`/evidence/${e.id}/anchors/refresh`, {}))}>Refresh anchors</button>}
             </div>
@@ -218,8 +218,8 @@ function ApprovalRow({ a, onDone }: { a: any; onDone: () => void }) {
     <div className="approval">
       <p><Pill v={a.status} /> plan <code>{a.planHash.slice(0, 12)}…</code> · risk <Pill v={a.risk} /> · needs {a.requiredApprovals} · expires {when(a.expiresAt)}</p>
       {canDecide && <div className="row">
-        <button className="primary" onClick={() => act.run(() => api.post(`/approvals/${a.id}/approve`, { comment: "Reviewed in the console" }), onDone)}>Approve exact plan</button>
-        <button onClick={() => { const c = reason("rejecting"); if (c) act.run(() => api.post(`/approvals/${a.id}/reject`, { comment: c }), onDone); }}>Reject</button>
+        <button className="primary" onClick={() => act.run(() => api.post(`/approvals/${a.id}/approve`, { comment: "Reviewed in the console" }), onDone, "Plan approved. Run the workflow to enforce it.")}>Approve exact plan</button>
+        <button className="danger" onClick={async () => { const c = await askReason("Reject this containment plan", "Reject"); if (c) act.run(() => api.post(`/approvals/${a.id}/reject`, { comment: c }), onDone, "Plan rejected"); }}>Reject</button>
       </div>}
       {a.status === "pending" && !canDecide && <p className="muted">Only an <b>approver</b> or <b>admin</b> can decide; the requester cannot approve their own request.</p>}
       <Err e={act.error} />
@@ -262,14 +262,14 @@ export function Agents() {
         <Err e={d.error} />
         <table><thead><tr><th>Name</th><th>Type</th><th>Status</th><th></th></tr></thead>
           <tbody>{(d.data?.data ?? []).map((a: any) => <tr key={a.id}><td>{a.name}</td><td>{a.agentType}</td><td><Pill v={a.status} /></td>
-            <td>{canWrite && a.status === "active" && <button onClick={() => { const r = reason("suspending"); if (r) act.run(() => api.post(`/agents/${a.id}/status`, { status: "suspended", reason: r }), d.reload); }}>Suspend</button>}</td></tr>)}</tbody></table>
+            <td>{canWrite && a.status === "active" && <button onClick={async () => { const r = await askReason(`Suspend ${a.name}`, "Suspend"); if (r) act.run(() => api.post(`/agents/${a.id}/status`, { status: "suspended", reason: r }), d.reload, "Agent suspended"); }}>Suspend</button>}</td></tr>)}</tbody></table>
       </Card>
     </>
   );
 }
 
 // ---------------------------------------------------------------------------------------------- Graph
-const COLORS: Record<string, string> = { authority: "#c2410c", resource: "#2563eb", operational: "#059669" };
+const COLORS: Record<string, string> = { authority: "#f59e6c", resource: "#4da3ff", operational: "#3ecf8e" };
 export function GraphView() {
   const d = useLoad(() => api.get("/graph/export").then((r) => r.data));
   if (!d.data) return <><h1>Dependency graph</h1><Err e={d.error} /></>;
@@ -287,7 +287,7 @@ export function GraphView() {
       <Card title={`${nodes.length} nodes · ${edges.length} edges`} actions={<span className="legend">{Object.entries(COLORS).map(([k, c]) => <span key={k}><i style={{ background: c }} /> {k}</span>)}</span>}>
         {nodes.length === 0 ? <Empty>Nothing registered yet. Load the demo network from the Overview.</Empty> : (
           <svg viewBox={`0 0 960 ${H}`} className="graph">
-            <defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#888" /></marker></defs>
+            <defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#6b7280" /></marker></defs>
             {edges.map((e) => { const a = pos.get(e.sourceNodeId), b = pos.get(e.targetNodeId); if (!a || !b) return null; const mx = (a.x + b.x) / 2; return <path key={e.id} d={`M${a.x + 70},${a.y} C${mx},${a.y} ${mx},${b.y} ${b.x - 70},${b.y}`} stroke={COLORS[e.dependencyType] ?? "#888"} strokeDasharray={e.status === "active" ? "" : "4 4"} fill="none" strokeWidth={2} markerEnd="url(#arr)"><title>{`${e.dependencyType}: ${e.relationship}`}</title></path>; })}
             {nodes.map((n) => { const p = pos.get(n.id)!; return <g key={n.id}><rect x={p.x - 70} y={p.y - 16} width={140} height={32} rx={6} className={`node ${n.entityType} st-${n.status ?? ""}`} /><text x={p.x} y={p.y + 4} textAnchor="middle">{n.name.length > 18 ? `${n.name.slice(0, 17)}…` : n.name}</text></g>; })}
           </svg>

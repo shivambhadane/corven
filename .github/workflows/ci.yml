@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - feature/*
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-and-test:
+    name: Typecheck, Lint, Test & Contracts
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: corven
+          POSTGRES_PASSWORD: corven_local_only
+          POSTGRES_DB: corven
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck Workspace
+        run: pnpm -r typecheck
+
+      - name: Lint Backend
+        run: pnpm --filter @corven/api lint
+
+      - name: Test Smart Contracts
+        run: |
+          cd contracts
+          forge test
+
+      - name: Apply Database Migrations
+        env:
+          DATABASE_URL: postgres://corven:corven_local_only@127.0.0.1:54329/corven
+        run: pnpm --filter @corven/api db:migrate
+
+      - name: Run Backend Test Suite
+        env:
+          DATABASE_URL: postgres://corven:corven_local_only@127.0.0.1:54329/corven
+        run: pnpm --filter @corven/api test
+
+      - name: Build Operator Console
+        run: pnpm --filter @corven/console build

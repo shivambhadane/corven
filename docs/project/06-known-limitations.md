@@ -23,7 +23,7 @@ The product must distinguish planned, approved, submitted, executed and verified
 |---|---|
 | **No real authentication, users or organizations** | Only a fail-closed default and a development header adapter. `organization_id` has no foreign key |
 | No rate limiting | |
-| No CI, dependency or secret scanning | Checks run locally only |
+| CI configured; dependency/secret scanning pending | GitHub Actions workflow configured (.github/workflows/ci.yml) for typecheck, lint, contracts, and tests |
 | Metadata secret detection is name-based | A secret under an innocent key passes |
 | Tamper-evidence limited to database triggers | A database superuser can bypass them; hashing, signing and anchoring are not built |
 | No TLS, secrets management or hardening procedure | |
@@ -32,7 +32,7 @@ The product must distinguish planned, approved, submitted, executed and verified
 
 | Module | Gap |
 |---|---|
-| Agent Registry | No agent deletion; no audit read endpoint; identity verification (ENS) not implemented, only the internal entry point; capabilities are descriptive strings; `incident_id` on history is not validated |
+| Agent Registry | No agent deletion; no audit read endpoint; ENS resolver utility implemented (EnsResolver), live automatic verification pipeline pending; capabilities are descriptive strings; `incident_id` on history is not validated |
 | Dependency Registry | Resources can only be created and read (no update, removal or audit); `resource → resource` and workflows as first-class entities unsupported; per-type metadata rules (`scope`, `accessLevel`) are an MVP convention; soft removal only; observed-again inactive dependencies need a human to reactivate; `last_verified_at` can run ahead of the latest version snapshot by design |
 | Graph Engine | Rebuilt per request (no cache); limit of 50,000 nodes and 250,000 edges; weak connectivity only is exposed; path and cycle enumeration are bounded and may report truncation; reflects registered dependencies only |
 | Dependency Discovery | Built for three source types with documents supplied inline; no live crawling or scheduling; runtime events are not authenticated as coming from a real gateway; confidence and the 0.8 threshold are policy values |
@@ -43,9 +43,9 @@ The product must distinguish planned, approved, submitted, executed and verified
 | Approval Service | Built. Approver identity comes from the development authenticator; approvals are not signed; no notifications; the expiry/reconciliation sweep is not scheduled yet (also applied lazily) |
 | Verification Service | Built. Probes use simulated executors; negative tests show only what the gateway allows; path checks cover only registered dependencies; runs are synchronous and a crash leaves a `running` row that must be cleared |
 | Orchestration | Built. Approvals are noticed on the next tick (up to a minute) unless nudged; one workflow per incident; no outbound event stream or dead-letter queue (failures stay visible as `failed` workflows); detection sources enter in-process only (no authenticated detector API) |
-| Evidence Service | Built. **Contract and client are implemented and tested locally (Anvil); not deployed, the server does not construct the Ethereum client yet.** **Arkiv: implemented with the official SDK and tested on Rabdi; needs an access key for real use (the anonymous budget is small); entities expire after ~180 days and are not extended.** Ethereum: read-side JSON-RPC client untested against a node; transaction submission/signing not built. ENS: no live resolution.** Records are hashed and chained but not signed. Anchoring and confirmation polling are manual calls. |
-| Contracts, ENS, Arkiv, Chainlink CRE | Not built; sponsor technologies not yet reviewed in detail |
-| Dashboard | Not built; static landing page only |
+| Evidence Service | Built. Contract and client are implemented and tested locally (Anvil); server constructs the Viem Ethereum client when Sepolia configuration is provided in the environment; public Sepolia deployment pending. Arkiv: implemented with official SDK and tested on Rabdi; entities expire after ~180 days. Records are hashed and chained. |
+| Contracts, ENS, Arkiv, Chainlink CRE | Solidity contracts tested with Foundry (34 tests); Arkiv SDK integrated; ENS resolver helper implemented; Chainlink CRE pending |
+| Dashboard / Console | Built. Operator console (`apps/console`) served at `/console/` with Graph, Incidents, Approvals, and Gateway pages; landing page at `/` |
 | Operations | Health check does not touch the database; no metrics or alerting; no cloud deployment |
 
 ## Design limits to keep visible

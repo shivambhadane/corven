@@ -24,3 +24,4 @@ export async function registerAgentRegistry(app: FastifyInstance, registry: Retu
 }
 
 export type { AgentRepository };
+export { EnsResolver, type EnsResolverConfig, type EnsVerificationResult } from "./services/ens-resolver.js";

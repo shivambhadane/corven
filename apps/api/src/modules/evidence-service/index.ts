@@ -20,5 +20,5 @@ export type { AnchorRef, ArkivClient, EthereumAnchorClient } from "./adapters/an
 export { loadArkivConfig, type ArkivConfig, type ArkivConfigState } from "./adapters/arkiv/config.js";
 export { SdkArkivClient, type ArkivHealth } from "./adapters/arkiv/sdk-client.js";
 export { ArkivError, classifyArkivError, type ArkivErrorCode } from "./adapters/arkiv/errors.js";
-export { EVIDENCE_ANCHOR_ABI, evidenceRef, incidentRef, ViemEthereumAnchor, type ViemAnchorConfig } from "./adapters/viem-ethereum.js";
+export { EVIDENCE_ANCHOR_ABI, evidenceRef, incidentRef, ViemEthereumAnchor, loadEthereumConfig, type ViemAnchorConfig, type EthereumConfigState } from "./adapters/viem-ethereum.js";
 export * from "./types.js";

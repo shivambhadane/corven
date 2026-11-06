@@ -37,6 +37,17 @@ export NODE_ENV="${NODE_ENV:-development}"
 [ "$NODE_ENV" = "production" ] && die "run.sh is for local development; it enables development sign-in"
 export CORVEN_DEV_AUTH=1
 
+port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
+if [ "$MODE" = "start" ] || [ "$MODE" = "dev" ]; then
+  if port_busy "$PORT"; then
+    if curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
+      die "CORVEN is already running on port ${PORT} (http://127.0.0.1:${PORT}/). Stop it first, or use PORT=3002 ./run.sh"
+    fi
+    die "port ${PORT} is in use by another program (see: ss -ltnp | grep :${PORT}). Free it, or use PORT=3002 ./run.sh"
+  fi
+  if [ "$MODE" = "dev" ] && port_busy 5173; then die "port 5173 (console dev server) is in use"; fi
+fi
+
 say "starting PostgreSQL (docker compose)"
 docker compose up -d --wait >/dev/null
 
