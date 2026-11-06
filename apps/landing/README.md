@@ -2,6 +2,12 @@
 
 Static, dependency-free page (HTML, CSS, a little vanilla JS). All copy and artwork are original to CORVEN; nothing is copied from the third-party mirror in `/landing` or from the reference images in `/designs`.
 
+## Design language
+Follows a design brief (electric single-accent hero, restrained light surfaces, dark code cards, small radii, no shadows, generous 92/115px section rhythm). It is a language, not a copy: the accent (`#c23208`), wordmark, copy, tile graphic, dotted wave (`assets/wave.svg`, generated) and all examples are CORVEN's own.
+- Tokens live at the top of `styles.css`. Change `--primary` to rebrand; keep white-on-primary contrast above 4.5:1.
+- Fonts are self-hosted from `fonts/` (Inter, Source Serif 4, Geist Mono; SIL Open Font License, Latin subset). They stand in for the brief's commercial typefaces.
+- Status colours (red/amber/green) appear only inside the illustrations.
+
 ```bash
 cd apps/landing
 python3 -m http.server 3000   # then open http://localhost:3000

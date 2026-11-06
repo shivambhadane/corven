@@ -4,91 +4,90 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CORVEN — Incident response for autonomous AI agent networks</title>
-  <meta name="description" content="When one AI agent is compromised, CORVEN maps what it can reach, calculates the smallest safe containment boundary, verifies the result and records evidence.">
-  <meta name="theme-color" content="#0b0d10">
+  <meta name="description" content="When one AI agent is compromised, CORVEN maps what it can reach, plans the smallest safe containment, verifies the result and records the proof.">
+  <meta name="theme-color" content="#c23208">
   <meta property="og:title" content="CORVEN — Infrastructure for Trusted Autonomous Systems">
-  <meta property="og:description" content="Contain a compromised agent without taking healthy agents down with it.">
+  <meta property="og:description" content="Contain one compromised agent without taking the whole network down.">
   <meta property="og:type" content="website">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0d10'/%3E%3Crect x='8' y='8' width='7' height='7' fill='%23ff6a2b'/%3E%3Crect x='17' y='8' width='7' height='7' fill='%23e8eaed'/%3E%3Crect x='8' y='17' width='7' height='7' fill='%23e8eaed'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23c23208'/%3E%3Crect x='7' y='7' width='8' height='8' fill='%23fff'/%3E%3Crect x='17' y='7' width='8' height='8' fill='%23ffd9c7'/%3E%3Crect x='7' y='17' width='8' height='8' fill='%23ffd9c7'/%3E%3C/svg%3E">
+  <link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
 
-  <header class="nav" role="banner">
-    <div class="wrap nav__row">
+  <section class="hero" id="top">
+    <header class="wrap bar">
       <a class="brand" href="#top" aria-label="CORVEN home">
-        <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="11" height="11" fill="#ff6a2b"/><rect x="18" y="3" width="11" height="11" fill="currentColor"/><rect x="3" y="18" width="11" height="11" fill="currentColor"/></svg>
+        <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="12" height="12" fill="#fff"/><rect x="17" y="3" width="12" height="12" fill="#ffd9c7"/><rect x="3" y="17" width="12" height="12" fill="#ffd9c7"/></svg>
         CORVEN
       </a>
       <nav aria-label="Primary">
-        <ul class="nav__links">
+        <ul class="bar__links">
           <li><a href="#problem">Problem</a></li>
-          <li><a href="#approach">Approach</a></li>
-          <li><a href="#demo">Example</a></li>
+          <li><a href="#example">Example</a></li>
+          <li><a href="#pillars">Capabilities</a></li>
           <li><a href="#status">Status</a></li>
           <li><a href="#limits">Limits</a></li>
         </ul>
       </nav>
-      <a class="btn btn--small" href="https://github.com/shivambhadane/corven">GitHub</a>
+      <a class="btn btn--light btn--bar" href="https://github.com/shivambhadane/corven">View on GitHub</a>
+    </header>
+
+    <div class="wrap hero__body" id="main">
+      <p class="kicker">Infrastructure for trusted autonomous systems</p>
+      <h1>
+        <span class="h1__sans">Contain one compromised agent.</span>
+        <span class="h1__serif">Not the <mark>whole</mark> network.</span>
+      </h1>
+      <p class="lede">AI agents hold wallets, APIs and each other's trust. When one is compromised, CORVEN maps what it can actually reach, plans the smallest safe containment, and keeps the proof of what happened.</p>
+      <div class="cta">
+        <a class="btn btn--light" href="#example">See an example incident</a>
+        <a class="link link--light" href="#status">What is built today →</a>
+      </div>
     </div>
-  </header>
+    <div class="hero__wave" aria-hidden="true"></div>
+  </section>
 
-  <main id="main">
-    <section class="hero" id="top">
-      <div class="hero__dots" aria-hidden="true">
-        <span class="px px--a"></span><span class="px px--b"></span><span class="px px--c"></span><span class="px px--d"></span>
-      </div>
+  <section class="strip" aria-label="Engineering evidence">
+    <div class="wrap strip__row">
+      <p class="strip__label">Engineering evidence · as of 6 Nov 2026</p>
+      <ul class="pills">
+        <li>367 automated tests</li>
+        <li>Real PostgreSQL, no database mocks</li>
+        <li>Audit history append-only in the database</li>
+        <li>Graph measured at 1,000 nodes · 5,000 edges</li>
+      </ul>
+    </div>
+  </section>
+
+  <main>
+    <section class="section section--center" id="problem">
       <div class="wrap">
-        <p class="eyebrow">Infrastructure for trusted autonomous systems</p>
-        <h1>Contain the compromised agent.<br><span class="accent">Keep the healthy ones running.</span></h1>
-        <p class="lede">AI agents hold wallets, APIs, credentials and each other's trust. When one is compromised, switching it off is not enough, and revoking everything it touched breaks agents that did nothing wrong. CORVEN finds what the agent can actually reach, calculates the smallest safe boundary, verifies it held and records what happened.</p>
-        <div class="cta">
-          <a class="btn" href="#demo">See an example incident</a>
-          <a class="btn btn--ghost" href="#status">What is built today</a>
+        <svg class="tiles" viewBox="0 0 240 96" role="img" aria-label="Abstract grid of squares with a few highlighted">
+          <g fill="#0d0d0d" opacity=".12">
+            <rect x="0" y="0" width="36" height="36"/><rect x="48" y="0" width="36" height="36"/><rect x="96" y="0" width="36" height="36"/><rect x="144" y="0" width="36" height="36"/><rect x="192" y="0" width="36" height="36"/>
+            <rect x="0" y="48" width="36" height="36"/><rect x="48" y="48" width="36" height="36"/><rect x="192" y="48" width="36" height="36"/>
+          </g>
+          <rect x="96" y="48" width="36" height="36" fill="#c23208"/>
+          <rect x="144" y="48" width="36" height="36" fill="#ffd9c7"/>
+        </svg>
+        <p class="statement">Switching off one agent rarely contains an incident. Its delegated authority, shared resources and downstream workflows keep working for the attacker, and revoking them blindly breaks agents that did nothing wrong.</p>
+        <p class="support">CORVEN works out the smallest boundary that stops the first without causing the second.</p>
+        <div class="cta cta--center">
+          <a class="btn" href="#example">See how</a>
+          <a class="link" href="#limits">Read the limits →</a>
         </div>
-        <p class="note">Hackathon project for ETHGlobal Mumbai 2026. In active development: see <a href="#status">status</a> for exactly what exists.</p>
       </div>
     </section>
 
-    <section id="problem" class="section">
-      <div class="wrap grid2">
-        <div>
-          <p class="eyebrow">The problem</p>
-          <h2>One compromised agent is rarely one problem.</h2>
-          <p class="muted">Most controls look at a single identity, permission or transaction. The risk sits in the connections between them.</p>
-        </div>
-        <ol class="list">
-          <li><span class="n">01</span><div><h3>Delegated authority</h3><p>A compromised agent may pass authority to others or hold it on someone else's behalf. Its identity alone doesn't show that.</p></div></li>
-          <li><span class="n">02</span><div><h3>Shared resources</h3><p>Revoking a shared API or credential for everyone stops the attacker and also stops every healthy agent using it.</p></div></li>
-          <li><span class="n">03</span><div><h3>Hidden downstream effects</h3><p>Operational dependencies carry the incident to agents that never touched the compromised one directly.</p></div></li>
-          <li><span class="n">04</span><div><h3>No proof it worked</h3><p>Teams often cannot show that the compromised path is blocked, that healthy workflows still run, or what was done and when.</p></div></li>
-        </ol>
-      </div>
-    </section>
-
-    <section id="approach" class="section section--alt">
+    <section class="section section--tint" id="example">
       <div class="wrap">
-        <p class="eyebrow">Approach</p>
-        <h2>Five capabilities, one deterministic chain.</h2>
-        <p class="muted narrow">Security decisions are made by explicit rules over a dependency graph, not by a language model. AI can help explain; it never approves or enforces.</p>
-        <ul class="cards">
-          <li><h3><span class="tag">Discover</span></h3><p>Map agents, permissions, resources and workflows, with the evidence and confidence behind every relationship.</p></li>
-          <li><h3><span class="tag">Analyze</span></h3><p>Trace dependencies from the compromised agent and separate authority, resource and operational exposure.</p></li>
-          <li><h3><span class="tag">Contain</span></h3><p>Compute the smallest set of authorization changes that blocks the attack paths while keeping healthy workflows reachable.</p></li>
-          <li><h3><span class="tag">Verify</span></h3><p>Retry the blocked operation, test a healthy workflow, and compare expected with observed.</p></li>
-          <li><h3><span class="tag">Prove</span></h3><p>Produce hash-linked evidence of the incident and response that others can check independently.</p></li>
-        </ul>
-      </div>
-    </section>
+        <p class="kicker kicker--dark">Example</p>
+        <h2>One incident, two responses.</h2>
+        <p class="body body--narrow">Five agents share a Customer API. The Payment agent is compromised. Step through what a blunt response does, then what minimum safe containment is meant to do.</p>
 
-    <section id="demo" class="section">
-      <div class="wrap">
-        <p class="eyebrow">Example</p>
-        <h2>The same incident, two responses.</h2>
-        <p class="muted narrow">Five agents share a Customer API. The Payment Agent is compromised. Step through what a blunt response does compared with minimum safe containment.</p>
-
-        <div class="demo" id="demo-app">
+        <div class="card demo" id="demo-app">
           <div class="demo__tabs" role="tablist" aria-label="Incident stages">
             <button role="tab" aria-selected="true" aria-controls="demo-panel" id="tab-network" data-state="network">1 · Network</button>
             <button role="tab" aria-selected="false" aria-controls="demo-panel" id="tab-blast" data-state="blast">2 · Blast radius</button>
@@ -104,7 +103,6 @@
               <defs>
                 <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
               </defs>
-              <!-- edges -->
               <g class="edges">
                 <g class="edge" data-id="e1"><line x1="165" y1="100" x2="275" y2="100"/><text x="220" y="88">delegates</text></g>
                 <g class="edge" data-id="e2"><line x1="405" y1="100" x2="535" y2="100"/><text x="470" y="88">triggers</text></g>
@@ -114,7 +112,6 @@
                 <g class="edge" data-id="e6"><line x1="130" y1="123" x2="300" y2="330"/><text x="168" y="250">accesses</text></g>
                 <g class="edge" data-id="e7"><line x1="165" y1="350" x2="275" y2="350"/><text x="220" y="338">accesses</text></g>
               </g>
-              <!-- nodes -->
               <g class="node node--agent" data-id="support"><rect x="35" y="77" width="130" height="46" rx="6"/><text x="100" y="105">Support</text></g>
               <g class="node node--agent" data-id="payment"><rect x="275" y="77" width="130" height="46" rx="6"/><text x="340" y="105">Payment</text></g>
               <g class="node node--agent" data-id="analytics"><rect x="535" y="77" width="130" height="46" rx="6"/><text x="600" y="105">Analytics</text></g>
@@ -147,98 +144,208 @@
               </ul>
             </div>
           </div>
-          <p class="disclaimer">Illustrative example of the intended behaviour. It is not output from a running CORVEN deployment; the containment engine is not built yet.</p>
+          <p class="disclaimer">Illustration of the intended behaviour, not output from a running deployment. The containment engine is not built yet.</p>
         </div>
       </div>
     </section>
 
-    <section id="how" class="section section--alt">
-      <div class="wrap">
-        <p class="eyebrow">How it works</p>
-        <h2>From signal to evidence.</h2>
-        <ol class="steps">
-          <li><b>Map</b><span>Agents, resources and typed dependencies (authority, resource, operational) form a directed graph.</span></li>
-          <li><b>Detect</b><span>A compromised agent or suspicious operation opens an incident.</span></li>
-          <li><b>Calculate impact</b><span>Trace affected agents, resources and workflows, with the paths that explain each.</span></li>
-          <li><b>Plan containment</b><span>Choose the smallest safe set of changes. Shared or uncertain ones wait for a human.</span></li>
-          <li><b>Enforce and verify</b><span>Apply through controlled enforcement points, then test blocked and healthy paths.</span></li>
-          <li><b>Record</b><span>Store a hash-linked incident timeline with signatures and transaction references.</span></li>
-        </ol>
-      </div>
-    </section>
+    <nav class="wrap pillnav" aria-label="Capabilities" id="pillars">
+      <ul>
+        <li><a href="#discover">Discover</a></li>
+        <li><a href="#analyze">Analyze</a></li>
+        <li><a href="#contain">Contain</a></li>
+        <li><a href="#verify">Verify</a></li>
+        <li><a href="#prove">Prove</a></li>
+      </ul>
+    </nav>
 
-    <section class="section">
+    <section class="section pillar" id="discover">
       <div class="wrap">
-        <p class="eyebrow">Design principles</p>
-        <h2>What it will and won't do.</h2>
-        <div class="two">
-          <ul class="ticks">
-            <li><b>Deterministic enforcement.</b> Decisions never depend solely on an AI model.</li>
-            <li><b>Least disruption.</b> Protect healthy workflows wherever possible.</li>
-            <li><b>Verifiable response.</b> Actions produce evidence you can check independently.</li>
-            <li><b>Explicit authority.</b> Only what CORVEN controls can be directly revoked.</li>
-          </ul>
-          <ul class="ticks ticks--no">
-            <li>Planned, approved, submitted, executed and verified containment are kept distinct. Submitting a transaction is not success.</li>
-            <li>A partial response is never reported as contained.</li>
-            <li>Missing evidence is not treated as proof a dependency is gone.</li>
-            <li>No claim to control agents or credentials outside its enforcement boundary.</li>
-          </ul>
+        <div class="pillar__head">
+          <h2>Discover</h2><span class="chip chip--built">Built · discovery in progress</span>
         </div>
+        <p class="body body--narrow">A registry of agents and resources, and typed dependencies between them: authority, resource and operational. Each relationship keeps its provenance, confidence, freshness and full version history. Automatic discovery from configurations, workflows and runtime events is the next module.</p>
+        <a class="link" href="https://github.com/shivambhadane/corven/blob/main/docs/modules/02-dependency-registry.md">Explore the dependency registry →</a>
+        <figure class="card code">
+          <figcaption class="code__bar"><span>POST /api/v1/dependencies</span><span class="chip chip--dark">request shape from the real API</span></figcaption>
+<pre><code>{
+  "sourceType": "agent",    "sourceId": "&lt;payment-agent&gt;",
+  "targetType": "resource", "targetId": "&lt;customer-api&gt;",
+  "dependencyType": "resource",
+  "relationship": "accesses",
+  "metadata": { "accessLevel": "write" },
+  "provenance": { "source": "manual" },
+  "confidence": 0.9
+}
+<span class="dim">→ 201  version 1 · status "active" · audit row written in the same transaction</span></code></pre>
+          <ul class="code__chips"><li>typed edge</li><li>versioned</li><li>evidence appended</li><li>tenant-isolated</li></ul>
+        </figure>
       </div>
     </section>
 
-    <section id="status" class="section section--alt">
+    <section class="section section--tint pillar" id="analyze">
       <div class="wrap">
-        <p class="eyebrow">Status as of 6 November 2026</p>
+        <div class="pillar__head">
+          <h2>Analyze</h2><span class="chip chip--built">Graph built · blast radius planned</span>
+        </div>
+        <p class="body body--narrow">An immutable, directed graph rebuilt from the registries. Ask who can reach what, by which path, filtered by dependency type, status and confidence. Reachability is structural: it shows connection, not compromise.</p>
+        <a class="link" href="https://github.com/shivambhadane/corven/blob/main/docs/modules/03-graph-engine.md">Explore the graph engine →</a>
+        <figure class="card code">
+          <figcaption class="code__bar"><span>GET /api/v1/graph/paths</span><span class="chip chip--dark">response shape from the real API</span></figcaption>
+<pre><code>?sourceNodeId=agent:&lt;support&gt;&amp;targetNodeId=agent:&lt;email&gt;&amp;maxPaths=10
+
+{
+  "found": true,
+  "shortest": { "length": 3,
+    "nodeIds": ["agent:support", "agent:payment",
+                "agent:analytics", "agent:email"] },
+  "truncated": false
+  <span class="dim">// trimmed: the real response also lists paths, edges and nodes</span>
+}</code></pre>
+          <ul class="code__chips"><li>directed</li><li>bounded search</li><li>deterministic order</li><li>cycles reported, never assumed invalid</li></ul>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section pillar" id="contain">
+      <div class="wrap">
+        <div class="pillar__head">
+          <h2>Contain</h2><span class="chip chip--planned">Planned</span>
+        </div>
+        <p class="body body--narrow">The central capability: the smallest set of authorization changes that blocks the compromised paths while keeping healthy workflows reachable. Shared or uncertain changes wait for a human, and every action explains why it is proposed.</p>
+        <a class="link" href="#example">Walk through the example →</a>
+        <figure class="card run">
+          <figcaption class="code__bar"><span>containment plan · illustration</span><span class="chip chip--dark">not real output</span></figcaption>
+          <ol class="run__steps">
+            <li><span class="mono">01</span> Cut Payment → Wallet <em class="state state--cut">Cut</em></li>
+            <li><span class="mono">02</span> Cut Payment → Customer API <em class="state state--cut">Cut</em></li>
+            <li><span class="mono">03</span> Keep Support → Customer API <em class="state state--keep">Preserved</em></li>
+            <li><span class="mono">04</span> Revoke Support → Payment delegation <em class="state state--wait">Waiting</em></li>
+          </ol>
+          <div class="run__approve"><span class="mono">Approval needed: uncertain dependency</span><span class="btn btn--card" aria-disabled="true">Approve</span><span class="btn btn--card btn--card-quiet" aria-disabled="true">Reject</span></div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section--tint pillar" id="verify">
+      <div class="wrap">
+        <div class="pillar__head">
+          <h2>Verify</h2><span class="chip chip--planned">Planned</span>
+        </div>
+        <p class="body body--narrow">Containment is not reported as success because a transaction was submitted. CORVEN retries the blocked operation, tests a healthy workflow, and compares what it expected with what it observed. Partial or failed outcomes stay visible.</p>
+        <figure class="card code">
+          <figcaption class="code__bar"><span>verification · illustration</span><span class="chip chip--dark">not real output</span></figcaption>
+<pre><code>retry  payment → customer-api   expect: denied    observed: <span class="dim">—</span>
+run    support → customer-api   expect: allowed   observed: <span class="dim">—</span>
+run    database → customer-api  expect: allowed   observed: <span class="dim">—</span>
+<span class="dim">status: not run · planned</span></code></pre>
+          <ul class="code__chips"><li>planned</li><li>approved</li><li>submitted</li><li>executed</li><li>verified</li></ul>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section pillar" id="prove">
+      <div class="wrap">
+        <div class="pillar__head">
+          <h2>Prove</h2><span class="chip chip--planned">Planned</span>
+        </div>
+        <p class="body body--narrow">Each stage of the incident becomes a hash-linked record that others can check without trusting CORVEN. Today the registries already keep append-only versions and audit rows enforced by the database; hashing, signing and external anchoring are still to build.</p>
+        <figure class="card code">
+          <figcaption class="code__bar"><span>evidence chain · illustration</span><span class="chip chip--dark">sample values, not real</span></figcaption>
+<pre><code>#1 incident opened        prev: ———       hash: 3fa9…c1
+#2 impact analysed        prev: 3fa9…c1   hash: b71a…08
+#3 plan approved          prev: b71a…08   hash: 5de2…7f
+#4 verification recorded  prev: 5de2…7f   hash: a04c…d9</code></pre>
+          <ul class="code__chips"><li>hash-linked</li><li>signed</li><li>independently checkable</li></ul>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section section--tint section--center" id="goals">
+      <div class="wrap">
+        <p class="kicker kicker--dark">Design goals</p>
+        <h2>What the response should achieve.</h2>
+        <ul class="benefits">
+          <li><h3>A smaller blast</h3><p>Cut what the compromised agent controls, and leave shared resources working for everyone else.</p></li>
+          <li><h3>Decisions you can read</h3><p>Deterministic rules over the graph, with the paths and reasons behind each proposed action. No language model approves or enforces.</p></li>
+          <li><h3>Honest outcomes</h3><p>Planned, approved, submitted, executed and verified are different things, and a partial response is never reported as contained.</p></li>
+        </ul>
+        <div class="cta cta--center"><a class="btn" href="#status">What is built today</a></div>
+      </div>
+    </section>
+
+    <section class="section" id="status">
+      <div class="wrap">
+        <p class="kicker kicker--dark">Status as of 6 November 2026</p>
         <h2>What is built, and what is not.</h2>
         <div class="table" role="table" aria-label="Build status">
           <div class="row row--head" role="row"><span role="columnheader">Component</span><span role="columnheader">State</span><span role="columnheader">Detail</span></div>
-          <div class="row" role="row"><span role="cell">Agent Registry</span><span role="cell"><i class="pill pill--done">Built</i></span><span role="cell">Lifecycle with controlled recovery, capabilities, identities, append-only audit, tenant isolation.</span></div>
-          <div class="row" role="row"><span role="cell">Dependency Registry</span><span role="cell"><i class="pill pill--done">Built</i></span><span role="cell">Typed relationships, cycle rules for authority, versioning, evidence history, shared resources.</span></div>
-          <div class="row" role="row"><span role="cell">Graph Engine</span><span role="cell"><i class="pill pill--done">Built</i></span><span role="cell">Immutable graph, traversal, paths, components and cycles, measured at 1,000 nodes and 5,000 edges.</span></div>
-          <div class="row" role="row"><span role="cell">Dependency Discovery</span><span role="cell"><i class="pill pill--wip">In progress</i></span><span role="cell">Registry-side groundwork done. Collectors, reconciliation and review are not built.</span></div>
-          <div class="row" role="row"><span role="cell">Blast-radius and containment engines</span><span role="cell"><i class="pill">Planned</i></span><span role="cell">The core differentiator. Algorithm design comes first.</span></div>
-          <div class="row" role="row"><span role="cell">Authorization gateway, approval, verification</span><span role="cell"><i class="pill">Planned</i></span><span role="cell">Enforcement points and post-containment checks.</span></div>
-          <div class="row" role="row"><span role="cell">Evidence, contracts, ENS, Arkiv, Chainlink CRE</span><span role="cell"><i class="pill">Planned</i></span><span role="cell">Integrations are built only where they serve the incident workflow.</span></div>
-          <div class="row" role="row"><span role="cell">Dashboard</span><span role="cell"><i class="pill">Planned</i></span><span role="cell">Graph view, incident detail, containment approval, evidence viewer.</span></div>
+          <div class="row" role="row"><span role="cell">Agent Registry</span><span role="cell"><i class="chip chip--built">Built</i></span><span role="cell">Lifecycle with controlled recovery, capabilities, identities, append-only audit, tenant isolation.</span></div>
+          <div class="row" role="row"><span role="cell">Dependency Registry</span><span role="cell"><i class="chip chip--built">Built</i></span><span role="cell">Typed relationships, authority cycle rules, versioning, evidence history, shared resources.</span></div>
+          <div class="row" role="row"><span role="cell">Graph Engine</span><span role="cell"><i class="chip chip--built">Built</i></span><span role="cell">Immutable graph, traversal, paths, components and cycles, measured at 1,000 nodes and 5,000 edges.</span></div>
+          <div class="row" role="row"><span role="cell">Dependency Discovery</span><span role="cell"><i class="chip chip--wip">In progress</i></span><span role="cell">Registry-side groundwork done. Collectors, reconciliation and review are not built.</span></div>
+          <div class="row" role="row"><span role="cell">Blast-radius and containment engines</span><span role="cell"><i class="chip chip--planned">Planned</i></span><span role="cell">The core differentiator. Algorithm design comes first.</span></div>
+          <div class="row" role="row"><span role="cell">Authorization gateway, approval, verification</span><span role="cell"><i class="chip chip--planned">Planned</i></span><span role="cell">Enforcement points and post-containment checks.</span></div>
+          <div class="row" role="row"><span role="cell">Evidence, contracts, ENS, Arkiv, Chainlink CRE</span><span role="cell"><i class="chip chip--planned">Planned</i></span><span role="cell">Integrations are built only where they serve the incident workflow.</span></div>
+          <div class="row" role="row"><span role="cell">Dashboard</span><span role="cell"><i class="chip chip--planned">Planned</i></span><span role="cell">Graph view, incident detail, containment approval, evidence viewer.</span></div>
         </div>
-        <p class="muted narrow">The API currently uses a development-only authentication adapter. Real authentication and organizations are still to come, so it must not be exposed publicly.</p>
+        <p class="body body--narrow slate">The API currently uses a development-only authentication adapter. Real authentication and organizations are still to come, so it must not be exposed publicly.</p>
       </div>
     </section>
 
-    <section id="limits" class="section">
+    <section class="section section--tint" id="limits">
       <div class="wrap grid2">
         <div>
-          <p class="eyebrow">Limits</p>
-          <h2>CORVEN is a response layer, not a guarantee.</h2>
+          <p class="kicker kicker--dark">Limits</p>
+          <h2>A response layer, not a guarantee.</h2>
         </div>
         <ul class="plain">
           <li>It can only enforce on systems and operations routed through its own enforcement points.</li>
           <li>It cannot reverse completed blockchain transactions or revoke independent credentials it does not control.</li>
           <li>It cannot discover dependencies invisible to its configured sources. The absence of a relationship is not proof none exists.</li>
-          <li>Reachability in the graph is structural: it does not mean an agent is compromised or that a path is exploitable.</li>
+          <li>Reachability in the graph is structural: it does not mean an agent is compromised or a path is exploitable.</li>
           <li>Containment involving shared resources or uncertain dependencies may require human approval.</li>
         </ul>
       </div>
     </section>
 
-    <section class="section section--alt">
+    <section class="section section--center closing">
       <div class="wrap">
-        <p class="eyebrow">Built with</p>
-        <ul class="stack">
-          <li>TypeScript</li><li>Fastify</li><li>PostgreSQL</li><li>Drizzle ORM</li><li>TypeBox</li><li>Vitest</li>
-          <li class="planned">Next.js · React Flow</li><li class="planned">Solidity · Foundry</li><li class="planned">Ethereum Sepolia</li><li class="planned">ENS</li><li class="planned">Arkiv</li><li class="planned">Chainlink CRE</li>
-        </ul>
-        <p class="muted">Solid items are in use today; outlined items are planned.</p>
+        <h2 class="closing__h">Follow the build.</h2>
+        <div class="cta cta--center">
+          <a class="btn" href="https://github.com/shivambhadane/corven">View the repository</a>
+          <a class="link" href="#limits">Read the limits first →</a>
+        </div>
       </div>
     </section>
   </main>
 
   <footer class="footer">
-    <div class="wrap footer__row">
-      <p><b>CORVEN</b> · Infrastructure for Trusted Autonomous Systems</p>
-      <p class="muted">ETHGlobal Mumbai 2026 · Licence to be determined · <a href="https://github.com/shivambhadane/corven">Source</a></p>
+    <div class="wrap footer__cols">
+      <div>
+        <p class="footer__brand">CORVEN</p>
+        <p class="slate">Infrastructure for Trusted Autonomous Systems.</p>
+      </div>
+      <nav aria-label="Page">
+        <h3>Page</h3>
+        <ul><li><a href="#problem">Problem</a></li><li><a href="#example">Example</a></li><li><a href="#pillars">Capabilities</a></li><li><a href="#status">Status</a></li></ul>
+      </nav>
+      <nav aria-label="Project">
+        <h3>Project</h3>
+        <ul>
+          <li><a href="https://github.com/shivambhadane/corven">Repository</a></li>
+          <li><a href="https://github.com/shivambhadane/corven/tree/main/docs">Documentation</a></li>
+          <li><a href="https://github.com/shivambhadane/corven/blob/main/docs/02-product-requirements.md">Product requirements</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Responsible use">
+        <h3>Notes</h3>
+        <ul><li><a href="#limits">Limits</a></li><li>Licence: to be determined</li></ul>
+      </nav>
+    </div>
+    <div class="wrap footer__legal">
+      <p>© 2026 CORVEN. Hackathon project for ETHGlobal Mumbai 2026.</p>
+      <p>Fonts: Inter, Source Serif 4 and Geist Mono, used under the SIL Open Font License.</p>
     </div>
   </footer>
 
