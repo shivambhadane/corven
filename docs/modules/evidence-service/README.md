@@ -6,7 +6,7 @@
 |---|---|
 | Canonical, schema-versioned incident record, SHA-256, hash chain per incident | Real |
 | Integrity verification (hash, chain, sealed sources unchanged, anchors) | Real |
-| Arkiv publication | **Interface and in-memory test double only. No Arkiv client exists.** |
+| Arkiv publication | **Implemented with the official SDK 1.0.1 and tested on the Rabdi testnet** (create, read back, query, verify, reconcile). A valid access key has not been tested; see [arkiv-integration.md](arkiv-integration.md) |
 | Ethereum anchoring: read side (receipt, confirmations, data check) | Real JSON-RPC client, tested against a fake transport; **never run against a live node** |
 | Ethereum anchoring: submitting a transaction | **Implemented in `ViemEthereumAnchor` and tested against a local Anvil chain with a deployed copy of the contract. Not deployed to Sepolia; not wired into the server's startup.** See [ethereum-integration.md](ethereum-integration.md) |
 | ENS | Identity references are recorded as registered; **no live ENS resolution** |

@@ -94,7 +94,7 @@ Technology choices and integrations may evolve during implementation.
 | Approval Service                           | Built and tested ([docs](docs/modules/approval-service/README.md)) |
 | Verification Service                       | Built and tested; probes use simulated executors ([docs](docs/modules/verification-service/README.md)) |
 | Incident-response orchestration            | Built and tested ([docs](docs/modules/orchestration/README.md)) |
-| Evidence Service                           | Built and tested; Arkiv/Ethereum behind interfaces with test doubles only ([docs](docs/modules/evidence-service/README.md)) |
+| Evidence Service                           | Built and tested; Arkiv integrated and tested on Rabdi; Ethereum contract and client tested locally, not deployed ([docs](docs/modules/evidence-service/README.md)) |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built                      |
 | Dashboard                                  | Not started (landing page: `apps/landing`) |
 | Authentication                             | **Development-only adapter**              |

@@ -16,6 +16,10 @@ Configuration comes from environment variables. Secrets never go in Git, `CLAUDE
 | `ETHEREUM_SEPOLIA_RPC_URL`, `ETHEREUM_CHAIN_ID` | `eth:verify` script, future server wiring | none | Sepolia endpoint (**secret**: embeds an API key) and `11155111`. Verified read-only; the server does not use them yet |
 | `ETHEREUM_SIGNER_PRIVATE_KEY` | future server wiring | none | Dedicated anchor-signer key (**secret**, testnet only, never mainnet). Not read by any code today |
 | `EVIDENCE_ANCHOR_CONTRACT_ADDRESS` | future server wiring, `eth:verify` | empty | Set only after an approved deployment |
+| `ARKIV_ENABLED`, `ARKIV_NETWORK`, `ARKIV_CHAIN_ID`, `ARKIV_RPC_URL` | API | on, none, 7794095, Rabdi endpoint | Arkiv Rabdi integration; the URL must be exactly the Rabdi endpoint |
+| `ARKIV_ACCESS_KEY` | API | none | Arkiv Hub key. **Secret.** Header only. Required for real use |
+| `ARKIV_SIGNER_PRIVATE_KEY` | API | none | Wallet that pays tGLM. **Secret.** Without it Arkiv is read-only |
+| `ARKIV_ALLOW_PUBLIC_ENDPOINT` | API | false | Development only: key-less, rate-limited endpoint |
 | `TEST_ADMIN_DATABASE_URL` | Tests | `postgres://corven:corven_local_only@127.0.0.1:54329/postgres` | Admin connection used to create and drop the throwaway test database |
 
 Local credentials in `docker-compose.yml` (`corven` / `corven_local_only`) are throwaways bound to `127.0.0.1`. They are not secrets and must never be reused anywhere.
