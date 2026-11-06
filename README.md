@@ -86,9 +86,10 @@ Technology choices and integrations may evolve during implementation.
 | Agent Registry                             | Built and tested                          |
 | Dependency Registry                        | Built and tested                          |
 | Graph Engine                               | Built and tested ([docs](docs/modules/graph-engine/README.md)) |
-| Dependency Discovery                       | Implemented (config, workflow, runtime sources; pg-boss queue) |
+| Graph Snapshots                            | Built and tested ([docs](docs/modules/graph-snapshot.md)) |
+| Dependency Discovery                       | Implemented (config, workflow, runtime sources; pg-boss queue) ([docs](docs/modules/dependency-discovery.md)) |
 | Incident Management                        | Designed, not built                       |
-| Graph Snapshots, Blast-Radius and Containment engines | Implemented and tested (501+ tests)       |
+| Blast-Radius and Containment engines       | Built and tested ([blast radius](docs/modules/05-blast-radius-engine.md), [containment](docs/modules/06-containment-engine.md)) |
 | Authorization Gateway, Approval, Verification | Designed, not built                    |
 | Evidence Service                           | Designed, not built                       |
 | Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built                      |

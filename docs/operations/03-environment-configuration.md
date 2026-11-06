@@ -10,6 +10,7 @@ Configuration comes from environment variables. Secrets never go in Git, `CLAUDE
 | `PORT` | API | `3001` | Listen port (binds to `127.0.0.1`) |
 | `NODE_ENV` | API | unset | `production` makes the server refuse the dev authenticator |
 | `CORVEN_DEV_AUTH` | API | unset | `1` enables the development header authenticator. **Never in production.** Without it every `/api` request is 401 |
+| `DISCOVERY_QUEUE` | API | unset (pg-boss) | `inline` runs discovery jobs in-process (local use, tests). Otherwise jobs go through pg-boss on `DATABASE_URL`, which creates its own `pgboss` schema |
 | `TEST_ADMIN_DATABASE_URL` | Tests | `postgres://corven:corven_local_only@127.0.0.1:54329/postgres` | Admin connection used to create and drop the throwaway test database |
 
 Local credentials in `docker-compose.yml` (`corven` / `corven_local_only`) are throwaways bound to `127.0.0.1`. They are not secrets and must never be reused anywhere.
@@ -26,7 +27,7 @@ Local credentials in `docker-compose.yml` (`corven` / `corven_local_only`) are t
 | `ENS_RPC_URL` | ENS resolution | Treat as secret |
 | `CRE_VERIFICATION_KEY` | Verify workflow results | Yes |
 | Auth settings (issuer, audience, JWKS URL, session secret) | Real authentication | Secrets where noted |
-| `GRAPH_*`, `DISCOVERY_*` tuning | Limits, schedules | No |
+| `GRAPH_*`, further `DISCOVERY_*` tuning | Limits, schedules | No |
 | `LOG_LEVEL` | Logging | No |
 
 ## Rules

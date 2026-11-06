@@ -13,7 +13,7 @@ Documentation-first and module by module, with core graph analysis and containme
 | 5. Evidence and dashboard | Evidence generation and verification, graph UI, incident UI, approval UI, evidence viewer | Not started (landing page done) |
 | 6. Deployment and validation | Docker, AWS, Vercel, database, CI/CD, security testing, end-to-end demo | Not started (local Docker Compose only) |
 
-Discovery (a part of phase 2) is in progress: registry-side groundwork is merged; sources, adapters, pipeline and review are not built.
+Discovery, graph snapshots, the Blast-Radius Engine and the Containment Engine are implemented and tested (502 tests). Phase 2 (incidents, gateway, approval, verification, evidence) is next.
 
 ## Completed so far
 

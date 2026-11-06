@@ -45,32 +45,36 @@ Checklist view of the roadmap. `[x]` done and tested, `[~]` partly done, `[ ]` n
 - [ ] Graph snapshots (separate module)
 - [ ] Caching / incremental updates (only if measurements justify)
 
-## Dependency Discovery (in progress)
+## Dependency Discovery (done)
 
 - [x] Registry-side prerequisites (writer, evidence, readers, system principal)
-- [ ] Discovery sources, runs, observations tables and API
-- [ ] pg-boss jobs and outbox
-- [ ] Adapters: agent configuration, workflow definition, runtime gateway
-- [ ] Normalization, entity resolution, confidence rules
-- [ ] Reconciliation: new, unchanged, modified, missing, conflicting, stale, unresolved
-- [ ] Human review
-- [ ] Authenticated gateway-event ingestion
-- [ ] End-to-end discovery test
+- [x] Discovery sources, runs, observations tables and API
+- [x] pg-boss jobs and outbox
+- [x] Adapters: agent configuration, workflow definition, runtime gateway
+- [x] Normalization, entity resolution, confidence rules
+- [x] Reconciliation: new, unchanged, modified, missing, conflicting, stale, unresolved
+- [x] Human review
+- [ ] Authenticated gateway-event ingestion (ingestion exists; producer authentication waits for the gateway)
+- [x] End-to-end discovery test
+
+## Graph Snapshots (done)
+
+- [x] Immutable snapshots with hash verification, diff, API
 
 ## Blast-Radius Engine
 
-- [ ] Resolve the inherited-authority question
-- [ ] Classification rules, explaining paths, shared-resource dependents
-- [ ] Unit and golden tests on the demo graph
-- [ ] API
+- [x] Resolve the inherited-authority question (delegators reported as uncertain; inheritance not modelled)
+- [x] Classification rules, explaining paths, shared-resource dependents
+- [x] Unit and golden tests on the demo graph
+- [x] API
 
 ## Containment Engine
 
-- [ ] Algorithm design review ([modules/06](../modules/06-containment-engine.md))
-- [ ] Max-flow core with deterministic minimum cut and tests
-- [ ] Workflow preservation and re-verification
-- [ ] Planner, explanations, approval triggers
-- [ ] Brute-force comparison and performance tests
+- [x] Algorithm design review ([modules/06](../modules/06-containment-engine.md))
+- [x] Max-flow core with deterministic minimum cut and tests
+- [x] Workflow preservation and re-verification
+- [x] Planner, explanations, approval triggers
+- [x] Brute-force comparison and performance tests
 
 ## Incident Management, Gateway, Approval, Verification, Evidence
 

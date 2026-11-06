@@ -35,8 +35,10 @@ The product must distinguish planned, approved, submitted, executed and verified
 | Agent Registry | No agent deletion; no audit read endpoint; identity verification (ENS) not implemented, only the internal entry point; capabilities are descriptive strings; `incident_id` on history is not validated |
 | Dependency Registry | Resources can only be created and read (no update, removal or audit); `resource → resource` and workflows as first-class entities unsupported; per-type metadata rules (`scope`, `accessLevel`) are an MVP convention; soft removal only; observed-again inactive dependencies need a human to reactivate; `last_verified_at` can run ahead of the latest version snapshot by design |
 | Graph Engine | Rebuilt per request (no cache); limit of 50,000 nodes and 250,000 edges; weak connectivity only is exposed; path and cycle enumeration are bounded and may report truncation; reflects registered dependencies only |
-| Dependency Discovery | Mostly not built: sources, adapters, normalization, resolution, reconciliation, review, jobs |
-| Blast radius, containment, incident, gateway, approval, verification, evidence | Not built; designs only |
+| Dependency Discovery | Built for three source types with documents supplied inline; no live crawling or scheduling; runtime events are not authenticated as coming from a real gateway; confidence and the 0.8 threshold are policy values |
+| Graph Snapshots | Not signed or anchored; no retention or deletion policy; `incident_id` unvalidated |
+| Blast radius, containment | Built. Reachability is structural; inherited authority not modelled; workflow preservation sound but incomplete; plans are advisory and assume every edge is controllable until the gateway reports coverage |
+| Incident, gateway, approval, verification, evidence | Not built; designs only |
 | Contracts, ENS, Arkiv, Chainlink CRE | Not built; sponsor technologies not yet reviewed in detail |
 | Dashboard | Not built; static landing page only |
 | Operations | Health check does not touch the database; no metrics or alerting; no cloud deployment |
