@@ -1,6 +1,6 @@
 # Incident Management
 
-**Status: implemented and tested.** Code: `apps/api/src/modules/incident-management`. Human authentication is still the development-only adapter (Firebase is not implemented).
+**Status: implemented and tested.** Code: `apps/api/src/modules/incident-management`. Human authentication is Firebase sign-in (see docs/saas/07-human-authentication.md), with a development-only adapter for local use.
 
 ## Purpose
 

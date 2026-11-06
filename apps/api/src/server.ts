@@ -1,10 +1,11 @@
 import { buildApp } from "./app.js";
 import { devHeaderAuthenticator, failClosedAuthenticator } from "./auth/dev-auth.js";
+import { createFirebaseVerifier } from "./auth/firebase.js";
+import { EnsResolver } from "./modules/agent-registry/index.js";
 import { randomBytes } from "node:crypto";
 import { createDb } from "./db/client.js";
 import { loadArkivConfig, SdkArkivClient, defaultEvidenceConfig, loadEthereumConfig } from "./modules/evidence-service/index.js";
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { ResourceExecutors, SimulatedExecutor } from "./modules/authorization-gateway/index.js";
 import { PgBossTicker } from "./modules/orchestrator/index.js";
 import { defaultAgentAuthConfig } from "./modules/authorization-gateway/index.js";
@@ -22,6 +23,45 @@ if (devAuth && production) {
   process.stderr.write("CORVEN_DEV_AUTH must not be enabled when NODE_ENV=production\n");
   process.exit(1);
 }
+
+// Human sign-in through Firebase. These are PUBLIC identifiers (the same values every Firebase web app ships to browsers);
+// no service account or secret is needed because ID tokens are verified against Google's published public keys.
+const fbProject = process.env.FIREBASE_PROJECT_ID?.trim();
+const firebase = fbProject
+  ? {
+      verifier: createFirebaseVerifier({ projectId: fbProject }),
+      publicConfig: {
+        apiKey: process.env.FIREBASE_WEB_API_KEY?.trim() ?? "",
+        authDomain: process.env.FIREBASE_AUTH_DOMAIN?.trim() || `${fbProject}.firebaseapp.com`,
+        projectId: fbProject,
+        appId: process.env.FIREBASE_APP_ID?.trim() ?? "",
+      },
+    }
+  : null;
+if (firebase && (!firebase.publicConfig.apiKey || !firebase.publicConfig.appId)) {
+  process.stderr.write("FIREBASE_PROJECT_ID is set but FIREBASE_WEB_API_KEY or FIREBASE_APP_ID is missing\n");
+  process.exit(1);
+}
+
+if (production) {
+  if (!firebase || !firebase.publicConfig.apiKey || !firebase.publicConfig.appId) {
+    process.stderr.write("Production requires FIREBASE_PROJECT_ID, FIREBASE_WEB_API_KEY, and FIREBASE_APP_ID\n");
+    process.exit(1);
+  }
+  if (process.env.CORVEN_SIMULATED_EXECUTORS === "1") {
+    process.stderr.write("CORVEN_SIMULATED_EXECUTORS must not be enabled in production\n");
+    process.exit(1);
+  }
+}
+
+// ENS (Sepolia) resolution for the integrations page. Uses the server's Sepolia RPC; the URL never leaves the server.
+const ensRpc = process.env.ENS_RPC_URL?.trim() || process.env.ETHEREUM_SEPOLIA_RPC_URL?.trim();
+const ensLookup = ensRpc
+  ? (() => {
+      const r = new EnsResolver({ rpcUrl: ensRpc, chain: "sepolia" });
+      return { network: "Ethereum Sepolia", resolveName: async (n: string) => (await r.resolveName(n)) ?? null };
+    })()
+  : null;
 
 const handle = createDb(databaseUrl);
 // Discovery runs execute in the background. pg-boss (over the same PostgreSQL) is the default;
@@ -53,10 +93,9 @@ const executors = new ResourceExecutors();
 if (devAuth && process.env.CORVEN_SIMULATED_EXECUTORS !== "0") executors.setDefault(new SimulatedExecutor());
 
 // The landing page and the built console are served from the same origin when present.
-const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
-const landingDir = process.env.CORVEN_LANDING_DIR ?? `${repoRoot}apps/landing`;
-const consoleDir = process.env.CORVEN_CONSOLE_DIR ?? `${repoRoot}apps/console/dist`;
-const web = { landingDir: existsSync(`${landingDir}/index.html`) ? landingDir : undefined, consoleDir: existsSync(`${consoleDir}/index.html`) ? consoleDir : undefined };
+// The website is the Next.js app in frontend/ (it proxies /api/v1 here). CORVEN_WEB_DIR can still serve a static build from this process.
+const webDir = process.env.CORVEN_WEB_DIR;
+const web = { dir: webDir && existsSync(`${webDir}/index.html`) ? webDir : undefined };
 
 const app = await buildApp({
   evidenceConfig,
@@ -65,12 +104,19 @@ const app = await buildApp({
   // No production authenticator exists yet: without the dev adapter every
   // request is rejected with 401 (fail closed).
   authenticate: devAuth ? devHeaderAuthenticator : failClosedAuthenticator,
+  devAuth,
+  integrations: {
+    ethereumState: ethCfg.state === "configured" ? { state: "configured" } : { state: ethCfg.state === "disabled" ? "disabled" : "not_configured", reason: ethCfg.reason },
+    ens: ensLookup,
+  },
+  ...(firebase ? { firebase } : {}),
   discoveryQueue,
   gatewayOptions: { agentAuth: defaultAgentAuthConfig(tokenSecret), executors },
   logger: true,
 });
 if (devAuth) app.log.warn("DEVELOPMENT AUTH ENABLED: request headers are trusted. Never use this in production.");
-else app.log.warn("No production authenticator is configured: all API requests will receive 401.");
+else if (!firebase) app.log.warn("No authenticator is configured (no FIREBASE_PROJECT_ID, no dev auth): all API requests will receive 401.");
+if (firebase) app.log.info(`Firebase sign-in enabled for project ${firebase.publicConfig.projectId}`);
 if (arkivCfg.state !== "configured") app.log.warn(`Arkiv anchoring is ${arkivCfg.state}: ${arkivCfg.reason}`);
 else if (arkivCfg.config.publicEndpoint) app.log.warn("Arkiv is using the public, rate-limited endpoint (no access key).");
 if (ethCfg.state === "configured") app.log.info(`Ethereum anchoring configured (contract: ${ethCfg.client.contractAddress}, signer: ${ethCfg.client.signerAddress ?? "read-only"})`);
@@ -86,5 +132,28 @@ if (process.env.ORCHESTRATOR_TICKER !== "off") {
 }
 
 const port = Number(process.env.PORT ?? 3001);
-await app.listen({ port, host: "127.0.0.1" });
-app.log.info(`CORVEN API on http://127.0.0.1:${port}${web.landingDir ? ` · landing at /` : ""}${web.consoleDir ? ` · console at /console/` : " · console not built (pnpm --filter @corven/console build)"}`);
+const host = process.env.HOST ?? (production ? "0.0.0.0" : "127.0.0.1");
+await app.listen({ port, host });
+app.log.info(`CORVEN API on http://${host}:${port}${web.dir ? ` · static web app at /` : ""}`);
+
+const shutdown = async (signal: string) => {
+  app.log.info({ signal }, "Shutting down gracefully...");
+  const timeout = setTimeout(() => {
+    app.log.error("Forced shutdown after timeout (15s)");
+    process.exit(1);
+  }, 15000);
+  try {
+    await app.close();
+    await handle.close();
+    clearTimeout(timeout);
+    app.log.info("Server and database pool closed cleanly.");
+    process.exit(0);
+  } catch (err) {
+    app.log.error({ err }, "Error during graceful shutdown");
+    process.exit(1);
+  }
+};
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));
+

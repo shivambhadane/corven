@@ -192,7 +192,7 @@ export type EthereumConfigState =
   | { state: "not_configured"; missing: string[]; reason: string }
   | { state: "configured"; client: ViemEthereumAnchor };
 
-export function loadEthereumConfig(env: Record<string, string | undefined> = process.env): EthereumConfigState {
+export function loadEthereumConfig(env: Record<string, string | undefined>): EthereumConfigState {
   if (env.ETHEREUM_ENABLED?.trim().toLowerCase() === "false") return { state: "disabled", reason: "ETHEREUM_ENABLED=false" };
   const rpcUrl = (env.ETHEREUM_SEPOLIA_RPC_URL ?? env.ETHEREUM_RPC_URL ?? "").trim();
   const contractAddress = (env.EVIDENCE_ANCHOR_CONTRACT_ADDRESS ?? env.ETHEREUM_CONTRACT ?? "").trim();

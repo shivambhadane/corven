@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS "webhook_deliveries" CASCADE;
+DROP TABLE IF EXISTS "webhooks" CASCADE;
+DROP TABLE IF EXISTS "api_keys" CASCADE;
+DROP TABLE IF EXISTS "organization_members" CASCADE;
+DROP TABLE IF EXISTS "organizations" CASCADE;

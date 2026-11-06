@@ -162,6 +162,20 @@
       "when": 1793958278902,
       "tag": "0022_arkiv_anchor_state",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793966604520,
+      "tag": "0023_saas_platform",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793977300778,
+      "tag": "0024_users",
+      "breakpoints": true
     }
   ]
 }

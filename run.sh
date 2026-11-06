@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # CORVEN: start everything locally.
 #
-#   ./run.sh          install, start PostgreSQL, migrate, build the console, run the API
-#                     -> landing page  http://127.0.0.1:3001/
-#                     -> console       http://127.0.0.1:3001/console/
-#   ./run.sh dev      same, but the API reloads on change and the console runs on Vite (http://127.0.0.1:5173/console/)
+#   ./run.sh          install, start PostgreSQL, migrate, build the web app, run the API
+#                     -> landing page  http://localhost:3000/        (frontend/, Next.js)
+#                     -> marketplace   http://localhost:3000/marketplace
+#                     -> API           http://127.0.0.1:3001/api/v1/  (the website proxies /api/v1 to it)
+#   ./run.sh dev      same, with hot reload for both the API and the website
 #   ./run.sh check    typecheck, lint, the full test suite and the contract tests (needs PostgreSQL; starts it)
 #   ./run.sh smoke    end-to-end test against a running ./run.sh (landing, console, full incident response, Arkiv)
 #   ./run.sh stop     stop PostgreSQL
@@ -37,15 +38,15 @@ export NODE_ENV="${NODE_ENV:-development}"
 [ "$NODE_ENV" = "production" ] && die "run.sh is for local development; it enables development sign-in"
 export CORVEN_DEV_AUTH=1
 
-port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
+port_busy() { timeout 2 bash -c "exec 3<>/dev/tcp/127.0.0.1/$1" 2>/dev/null; }
 if [ "$MODE" = "start" ] || [ "$MODE" = "dev" ]; then
   if port_busy "$PORT"; then
-    if curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
+    if curl -sf --max-time 3 "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
       die "CORVEN is already running on port ${PORT} (http://127.0.0.1:${PORT}/). Stop it first, or use PORT=3002 ./run.sh"
     fi
-    die "port ${PORT} is in use by another program (see: ss -ltnp | grep :${PORT}). Free it, or use PORT=3002 ./run.sh"
+    die "port ${PORT} is in use by a program that is not answering (see: ss -ltnp | grep :${PORT}). Stop it, or use PORT=3002 ./run.sh"
   fi
-  if [ "$MODE" = "dev" ] && port_busy 5173; then die "port 5173 (console dev server) is in use"; fi
+  if port_busy "${WEB_PORT:-3000}"; then die "port ${WEB_PORT:-3000} (website) is in use. Free it, or use WEB_PORT=3002 ./run.sh"; fi
 fi
 
 say "starting PostgreSQL (docker compose)"
@@ -53,6 +54,7 @@ docker compose up -d --wait >/dev/null
 
 say "installing dependencies"
 pnpm install --frozen-lockfile --silent
+(cd frontend && npm ci --silent --no-audit --no-fund)
 
 if [ "$MODE" = "check" ]; then
   say "typecheck";  pnpm -r typecheck
@@ -71,19 +73,24 @@ cleanup() { trap - INT TERM EXIT; [ -n "${PIDS:-}" ] && kill $PIDS 2>/dev/null |
 trap cleanup INT TERM EXIT
 
 if [ "$MODE" = "dev" ]; then
-  say "console (Vite)  -> http://127.0.0.1:5173/console/"
-  pnpm --filter @corven/console dev --host 127.0.0.1 &
+  say "website (Next, hot reload) -> http://localhost:${WEB_PORT:-3000}/"
+  (cd frontend && NODE_ENV=development CORVEN_API_URL="http://127.0.0.1:${PORT}" npx next dev -p "${WEB_PORT:-3000}") &
   PIDS="$!"
-  say "API (watch)     -> http://127.0.0.1:${PORT}/  (landing)"
+  say "API (watch)     -> http://127.0.0.1:${PORT}/api/"
   pnpm --filter @corven/api dev &
   PIDS="$PIDS $!"
   wait
 else
-  say "building the console"
-  pnpm --filter @corven/console build >/dev/null
+  say "building the website (frontend/)"
+  (cd frontend && NODE_ENV=production CORVEN_API_URL="http://127.0.0.1:${PORT}" npx next build >/dev/null)
   say "CORVEN is starting"
-  say "  landing page  http://127.0.0.1:${PORT}/"
-  say "  console       http://127.0.0.1:${PORT}/console/"
+  say "  API           http://127.0.0.1:${PORT}/api/v1/"
+  say "  website       http://localhost:${WEB_PORT:-3000}/"
+  say "  login         http://localhost:${WEB_PORT:-3000}/login"
+  say "  dashboard     http://localhost:${WEB_PORT:-3000}/dashboard"
+  say "  marketplace   http://localhost:${WEB_PORT:-3000}/marketplace"
+  (cd frontend && NODE_ENV=production npx next start -p "${WEB_PORT:-3000}") &
+  PIDS="$!"
   say "  health        http://127.0.0.1:${PORT}/health"
   pnpm --filter @corven/api start
 fi

@@ -13,8 +13,8 @@ declare module "fastify" {
     agent: AuthenticatedAgent;
   }
   interface FastifyContextConfig {
-    /** "agent": authenticated by a machine token in this route's own preHandler. "public": no authentication (token exchange). Default: human principal. */
-    auth?: "agent" | "public";
+    /** "agent": authenticated by a machine token in this route's own preHandler. "public": no authentication (token exchange, public client config). "user": a signed-in person who may not belong to an organization yet (/me). Default: human principal. */
+    auth?: "agent" | "public" | "user";
   }
 }
 

@@ -75,5 +75,5 @@ jobs:
           DATABASE_URL: postgres://corven:corven_local_only@127.0.0.1:54329/corven
         run: pnpm --filter @corven/api test
 
-      - name: Build Operator Console
-        run: pnpm --filter @corven/console build
+      - name: Build web app (landing, marketplace)
+        run: cd frontend && npm ci --no-audit --no-fund && npx tsc --noEmit && npx next build
