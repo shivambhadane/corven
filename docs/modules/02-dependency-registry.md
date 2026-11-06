@@ -8,7 +8,7 @@ The Dependency Registry stores validated, versioned relationships between agents
 
 **Implemented here:** dependency CRUD (soft removal), three typed relationship kinds, relationship validation, authority-cycle prevention, provenance/confidence/freshness, per-change version history, append-only audit, and a *minimum* resource model.
 
-**Not implemented (future modules):** Dependency Discovery itself (its prerequisites are in section 16), Graph Engine, graph snapshots, blast-radius analysis, containment, resource management beyond create/read.
+**Not implemented here (other modules):** Dependency Discovery itself (its prerequisites are in section 16), graph snapshots, blast-radius analysis and containment, and resource management beyond create and read. The Graph Engine is a separate, implemented module that **reads** this registry; see [graph-engine/](graph-engine/README.md).
 
 ## 2. Responsibilities
 
@@ -168,7 +168,7 @@ Same envelope and safe-error rules as Module 1: `AppError` subclasses carry clie
 ## 15. Future integration
 
 - **Dependency Discovery** will create `discovered`/`inferred` dependencies through `DependencyService.create` with `provenance` and `confidence`; nothing here performs discovery.
-- **Graph Engine / snapshots** will read `dependencies` (active edges, typed, with confidence and freshness) and `dependency_versions`; traversal, reachability and snapshotting are not implemented here, and the authority cycle check is not a substitute for them.
+- **Graph Engine** (implemented, [graph-engine/](graph-engine/README.md)) reads `dependencies` (all statuses, with type, confidence and provenance) and builds the structural graph; traversal, reachability, paths, components and cycles live there, and the authority cycle check in this module is not a substitute for them. **Graph snapshots** (planned) will persist immutable graphs from the Graph Engine's export; they will not read this registry directly.
 - **Blast-radius and containment** will rely on the distinction between `authority`, `resource` and `operational` edges and on `metadata.scope` / `metadata.accessLevel`.
 - **Evidence Service** will hash `dependency_versions` / `dependency_audit_logs`.
 
@@ -210,9 +210,11 @@ Not exposed over HTTP. Acts as the internal discovery principal (`role: "system"
 - `findMatching(org, key)` returns the matching dependency (any status) or null.
 - Everything runs in one transaction; a failed evidence write rolls back the creation (tested).
 
-### Read interface for the future Graph Engine: `DependencyGraphDataProvider`
+### Read interface for graph consumers: `DependencyGraphDataProvider`
 
 `listActiveDependencies(org, { observedAfter?, dependencyTypes? })` and `getDependency(org, id)`. Active dependencies only, organization-explicit, read-only. `observedAfter` filters on freshness, the later of `observed_at` and `last_verified_at`; edges with neither are excluded when the filter is used. Evidence is read separately. No graph traversal exists here.
+
+**Relationship to the Graph Engine.** The implemented [Graph Engine](graph-engine/README.md) does **not** use this provider. To build a consistent graph it reads agents, resources and dependencies (all statuses) directly from the registry repositories inside one read-only `REPEATABLE READ` transaction (`RegistryGraphInputProvider`). `DependencyGraphDataProvider` remains available for other read-only consumers that only need active dependencies; today nothing consumes it.
 
 ### Changes to Module 1 and resources
 

@@ -92,7 +92,7 @@ This must be demonstrated through actual system behavior rather than presented o
 
 ## 3.1 Vision
 
-Build infrd safely and veastructure that enables organizations to responrifiably when autonomous AI agents or their connected systems are compromised.
+Build infrastructure that enables organizations to respond safely and verifiably when autonomous AI agents or their connected systems are compromised.
 
 ## 3.2 Primary Objectives
 

@@ -1,3 +1,55 @@
-# threat model
+# Threat Model
 
-TODO
+Scope: threats to **CORVEN itself** as security infrastructure (not to the agents it protects). Method: STRIDE over the trust boundaries in [architecture/06-security-architecture.md](../architecture/06-security-architecture.md). "Built" means implemented and tested; "Planned" means designed only.
+
+## Assets
+
+| Asset | Why it matters |
+|---|---|
+| Dependency inventory (agents, resources, edges, confidence) | A wrong or tampered graph misleads containment |
+| Containment plans and approvals | Wrong or unauthorized plans cause damage or leave the attacker in place |
+| Audit, version and evidence history | Integrity of the record is the product's promise |
+| Enforcement credentials and the evidence signing key | Compromise lets an attacker act as CORVEN |
+| Tenant data | Cross-tenant leakage ends trust |
+
+## Adversaries
+
+External attacker with network access; malicious or compromised tenant user; compromised agent trying to influence its own classification; compromised discovery source supplying false evidence; insider with database access; supply-chain attacker (dependencies).
+
+## Threats and mitigations
+
+| # | Threat (STRIDE) | Mitigation | State |
+|---|---|---|---|
+| T1 | **Spoofing:** forged identity calls the API | Real authentication | **Planned; dev adapter only today** |
+| T2 | Spoofing: a client claims another organization | Organization from the principal only; unknown body fields rejected | Built |
+| T3 | **Tampering:** edit or delete history | Append-only triggers; `RESTRICT` foreign keys; no mutating routes | Built (not against a DB superuser) |
+| T4 | Tampering: undetected change by a privileged DB user | Hash chain, signing, external anchoring | Planned |
+| T5 | Tampering: mass assignment (set status, org, version) | `additionalProperties:false`, rejected not ignored | Built |
+| T6 | Tampering: forged dependency makes the graph wrong | Per-type rules, endpoint existence in the org, authority cycle prevention, provenance and confidence; discovery cannot create authority edges from weak sources | Built (partly) |
+| T7 | Tampering: a compromised discovery source plants false edges | Confidence from strongest evidence, no auto-reactivation, human review for uncertain findings, a failed source never deactivates | Partly built; review planned |
+| T8 | **Repudiation:** denying an action | Actor on every version, audit and status row; internal actor distinguishes automation | Built |
+| T9 | **Information disclosure:** cross-tenant read | Org scoping; 404 for foreign ids; composite FKs | Built, tested |
+| T10 | Disclosure: SQL or stack leakage in errors | Safe messages, generic 500, cause logged server-side only | Built, tested |
+| T11 | Disclosure: secrets stored in metadata or evidence | Secret-looking key guard (names only), size and depth limits | Partial |
+| T12 | **Denial of service:** unbounded graph queries | Depth, path, cycle and search budget limits; graph size cap | Built |
+| T13 | DoS: request floods, brute force | Rate limiting | **Planned** |
+| T14 | **Elevation:** operator performs recovery or verification | Role checks; every exit from `compromised` is admin-only | Built |
+| T15 | Elevation: the `system` role obtained over HTTP | HTTP authenticators return human roles only; `x-dev-role: system` rejected (tested) | Built |
+| T16 | Elevation: approval reused for a different plan | Approval bound to plan hash | Planned |
+| T17 | Race: two requests create an authority cycle | Per-organization advisory lock (tested) | Built |
+| T18 | Race: concurrent status changes | Row lock; exactly one wins (tested) | Built |
+| T19 | Unauthenticated runtime events accepted as evidence | Authenticated producers, unique event ids, signature checks | Planned |
+| T20 | A false "contained" status | Distinct planned/approved/submitted/executed/verified; verification required | Planned |
+| T21 | Supply chain: malicious dependency | Lockfile, scanning in CI | **No CI yet** |
+| T22 | LLM manipulation influences decisions | LLM never approves, enforces or decides ownership | Policy; no LLM in the code |
+
+## Residual risk to accept or fix
+
+1. Everything depends on real authentication, which does not exist yet (T1).
+2. A privileged database user can disable triggers (T4) until hashing and anchoring exist.
+3. The graph is only as good as what was registered or discovered; the product states this.
+4. Secret detection is a guardrail, not a guarantee (T11).
+
+## Review cadence
+
+Revisit this document when authentication lands, when the gateway is designed (new boundary), and before any public deployment.

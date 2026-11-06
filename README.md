@@ -78,43 +78,50 @@ Technology choices and integrations may evolve during implementation.
 
 ## Project Status
 
-<text>Currently in the documentation and architecture phase.</text>
+<text>Early implementation. The registries and the graph engine are built and tested; the incident-response modules are designed but not built.</text>
 
-| Area                      | Status      |
-| ------------------------- | ----------- |
-| Project definition        | In progress |
-| Problem specification     | Planned     |
-| Product requirements      | Planned     |
-| System architecture       | Planned     |
-| Dependency graph engine   | Not started |
-| Containment engine        | Not started |
-| Smart contracts           | Not started |
-| ENS integration           | Not started |
-| Arkiv integration         | Not started |
-| Chainlink CRE integration | Not started |
-| Frontend                  | Not started |
-| Testing and integration   | Not started |
+| Area                                       | Status                                    |
+| ------------------------------------------ | ----------------------------------------- |
+| Documentation (PRD, architecture, modules) | Written (see [docs/](docs/))              |
+| Agent Registry                             | Built and tested                          |
+| Dependency Registry                        | Built and tested                          |
+| Graph Engine                               | Built and tested ([docs](docs/modules/graph-engine/README.md)) |
+| Dependency Discovery                       | In progress (registry-side groundwork)    |
+| Incident Management                        | Designed, not built                       |
+| Blast-Radius and Containment engines       | Designed, not built                       |
+| Authorization Gateway, Approval, Verification | Designed, not built                    |
+| Evidence Service                           | Designed, not built                       |
+| Smart contracts, ENS, Arkiv, Chainlink CRE | Designed, not built                      |
+| Dashboard                                  | Not started (landing page: `apps/landing`) |
+| Authentication                             | **Development-only adapter**              |
+| CI and cloud deployment                    | Not started                               |
+
+Exact scope, limits and the roadmap: [docs/project/06-known-limitations.md](docs/project/06-known-limitations.md) and [docs/project/01-implementation-roadmap.md](docs/project/01-implementation-roadmap.md).
 
 ## Repository Structure
 
 ```text
 corven/
-├── docs/
 ├── apps/
-│   ├── web/
-│   └── api/
-├── contracts/
-├── packages/
-│   ├── graph-engine/
-│   ├── containment-engine/
-│   └── shared/
-├── integrations/
-│   ├── ens/
-│   ├── arkiv/
-│   └── chainlink/
-├── tests/
+│   ├── api/            Fastify + TypeScript + Drizzle API (registries, graph engine, tests)
+│   └── landing/        Static landing page
+├── contracts/          Reserved for Solidity/Foundry
+├── docs/               Documentation (start at docs/00-project-overview.md)
+├── docker-compose.yml  Local PostgreSQL
 └── README.md
 ```
+
+Planned but not created: `apps/web` (dashboard), `packages/*`, `integrations/*`.
+
+## Quick Start
+
+```bash
+corepack enable && pnpm install
+docker compose up -d --wait
+pnpm typecheck && pnpm lint && pnpm test
+```
+
+More in [docs/operations/02-deployment-guide.md](docs/operations/02-deployment-guide.md). The API has no production authentication yet; do not expose it publicly.
 
 ## Scope and Limitations
 
