@@ -41,11 +41,16 @@ export interface ResourceExecutor {
 
 export class ResourceExecutors {
   private readonly byResource = new Map<string, ResourceExecutor>();
+  private fallback: ResourceExecutor | undefined;
   register(resourceId: string, executor: ResourceExecutor): void {
     this.byResource.set(resourceId, executor);
   }
+  /** Used for resources without their own executor. Development only: the server sets a SimulatedExecutor here under dev auth. */
+  setDefault(executor: ResourceExecutor | undefined): void {
+    this.fallback = executor;
+  }
   get(resourceId: string): ResourceExecutor | undefined {
-    return this.byResource.get(resourceId);
+    return this.byResource.get(resourceId) ?? this.fallback;
   }
 }
 

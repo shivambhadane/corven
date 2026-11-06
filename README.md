@@ -14,6 +14,21 @@ CORVEN aims to identify the full impact of a compromised agent, calculate the sm
 
 ---
 
+
+## Run it
+
+```bash
+./run.sh          # PostgreSQL, install, migrate, build the console, start the API
+#   landing page  http://127.0.0.1:3001/
+#   console       http://127.0.0.1:3001/console/   (Console / Login on the landing page)
+./run.sh smoke    # in another terminal: end-to-end check of the whole flow
+./run.sh check    # typecheck, lint, tests, contract tests
+./run.sh dev      # hot reload (console on :5173)
+./run.sh stop     # stop PostgreSQL
+```
+
+Needs Node 22+, pnpm, Docker. Secrets come from `.env` (git-ignored; see `.env.example`). Local only: it enables development sign-in.
+
 ## The Problem
 
 Autonomous agents increasingly operate with delegated permissions and access to shared resources.

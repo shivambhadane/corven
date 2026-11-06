@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import fastifyStatic from "@fastify/static";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import addFormats from "ajv-formats";
 import type { Authenticator, Principal } from "./auth/principal.js";
@@ -60,6 +61,8 @@ export interface BuildAppOptions {
   /** Background queue for discovery runs. Defaults to an in-process queue; the server uses pg-boss. */
   discoveryQueue?: JobQueue;
   logger?: boolean;
+  /** Static web apps served from the same origin: the landing page at / and the operator console at /console/. */
+  web?: { landingDir?: string | undefined; consoleDir?: string | undefined };
 }
 
 export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> {
@@ -83,6 +86,9 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
 
   app.addHook("onRequest", async (req) => {
     if (req.url === "/health") return;
+    // Only the API requires a principal. The landing page and the console's static files are public; the console then
+    // calls the API, which authenticates every request.
+    if (!req.url.startsWith("/api/")) return;
     // Machine-facing routes authenticate themselves (an agent token) or are the public token exchange.
     if (req.routeOptions.config?.auth) return;
     const principal = opts.authenticate(req.headers);
@@ -91,6 +97,14 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
   });
 
   app.get("/health", async () => ({ status: "ok" }));
+
+  if (opts.web?.consoleDir) {
+    await app.register(fastifyStatic, { root: opts.web.consoleDir, prefix: "/console/", decorateReply: !opts.web.landingDir, index: ["index.html"] });
+    app.get("/console", (_req, reply) => reply.redirect("/console/"));
+  }
+  if (opts.web?.landingDir) {
+    await app.register(fastifyStatic, { root: opts.web.landingDir, prefix: "/", decorateReply: true, index: ["index.html"], extensions: ["html"] });
+  }
 
   app.setNotFoundHandler((_req, reply) => {
     void reply.code(404).send({ error: { code: "NOT_FOUND", message: "Route not found" } });

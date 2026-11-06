@@ -239,6 +239,11 @@ export class EvidenceService {
     return { record: (await this.repo.find(this.db, p.organizationId, id))!, anchors: r.rows, steps: r.steps };
   }
 
+  /** The anchor targets this deployment has a client for. */
+  anchorTargets(): AnchorTarget[] {
+    return [...(this.cfg.arkiv ? (["arkiv"] as const) : []), ...(this.cfg.ethereum ? (["ethereum"] as const) : [])];
+  }
+
   // ------------------------------------------------------------------ Arkiv
 
   /**

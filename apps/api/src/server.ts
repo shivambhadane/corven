@@ -3,6 +3,9 @@ import { devHeaderAuthenticator, failClosedAuthenticator } from "./auth/dev-auth
 import { randomBytes } from "node:crypto";
 import { createDb } from "./db/client.js";
 import { loadArkivConfig, SdkArkivClient, defaultEvidenceConfig } from "./modules/evidence-service/index.js";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { ResourceExecutors, SimulatedExecutor } from "./modules/authorization-gateway/index.js";
 import { PgBossTicker } from "./modules/orchestrator/index.js";
 import { defaultAgentAuthConfig } from "./modules/authorization-gateway/index.js";
 import { InlineJobQueue, PgBossJobQueue } from "./modules/dependency-discovery/jobs/queue.js";
@@ -41,14 +44,26 @@ const evidenceConfig = defaultEvidenceConfig({
   ...(arkivCfg.state === "configured" ? { arkiv: new SdkArkivClient(arkivCfg.config, { log: (event, fields) => process.stdout.write(`${JSON.stringify({ level: "info", event, ...fields })}\n`) }) } : {}),
   log: (event, fields) => process.stdout.write(`${JSON.stringify({ level: "info", event, ...fields })}\n`),
 });
+// Resource executors. No real external resource is wired yet; under development auth every resource gets a SimulatedExecutor
+// (flagged "simulated" on every execution record) so the full response can be exercised. CORVEN_SIMULATED_EXECUTORS=0 turns it off.
+const executors = new ResourceExecutors();
+if (devAuth && process.env.CORVEN_SIMULATED_EXECUTORS !== "0") executors.setDefault(new SimulatedExecutor());
+
+// The landing page and the built console are served from the same origin when present.
+const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
+const landingDir = process.env.CORVEN_LANDING_DIR ?? `${repoRoot}landing`;
+const consoleDir = process.env.CORVEN_CONSOLE_DIR ?? `${repoRoot}apps/console/dist`;
+const web = { landingDir: existsSync(`${landingDir}/index.html`) ? landingDir : undefined, consoleDir: existsSync(`${consoleDir}/index.html`) ? consoleDir : undefined };
+
 const app = await buildApp({
   evidenceConfig,
+  web,
   db: handle.db,
   // No production authenticator exists yet: without the dev adapter every
   // request is rejected with 401 (fail closed).
   authenticate: devAuth ? devHeaderAuthenticator : failClosedAuthenticator,
   discoveryQueue,
-  gatewayOptions: { agentAuth: defaultAgentAuthConfig(tokenSecret) },
+  gatewayOptions: { agentAuth: defaultAgentAuthConfig(tokenSecret), executors },
   logger: true,
 });
 if (devAuth) app.log.warn("DEVELOPMENT AUTH ENABLED: request headers are trusted. Never use this in production.");
@@ -67,3 +82,4 @@ if (process.env.ORCHESTRATOR_TICKER !== "off") {
 
 const port = Number(process.env.PORT ?? 3001);
 await app.listen({ port, host: "127.0.0.1" });
+app.log.info(`CORVEN API on http://127.0.0.1:${port}${web.landingDir ? ` · landing at /` : ""}${web.consoleDir ? ` · console at /console/` : " · console not built (pnpm --filter @corven/console build)"}`);

@@ -274,7 +274,10 @@ export class Orchestrator {
           await this.repo.addEvent(this.db, org, wf.id, "evidence_generated", { evidenceId });
         }
         try {
-          await this.d.evidence.anchor(sys, evidenceId);
+          // Only the targets this deployment can actually reach; none configured is not an error.
+          const targets = this.d.evidence.anchorTargets();
+          if (targets.length > 0) await this.d.evidence.anchor(sys, evidenceId, targets);
+          else await this.repo.addEvent(this.db, org, wf.id, "anchoring_skipped", { reason: "NO_ANCHOR_TARGET_CONFIGURED" });
         } catch (e) {
           // Anchoring is best effort and never changes the outcome: not configured, or the evidence failed integrity checks.
           await this.repo.addEvent(this.db, org, wf.id, "anchoring_skipped", { reason: e instanceof AppError ? e.code : "error" });
