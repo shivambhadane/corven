@@ -4,6 +4,9 @@ export interface Session {
   org: string;
   actor: string;
   role: Role;
+  orgName?: string;
+  tier?: "starter" | "pro" | "enterprise";
+  apiKey?: string;
 }
 
 const KEY = "corven.session";
@@ -31,18 +34,25 @@ export const setSession = (s: Session | null) => {
 };
 export const session = () => current;
 
-/**
- * DEVELOPMENT SIGN-IN: the API's development authenticator trusts these headers. It exists only while real
- * authentication (planned: Firebase) is not built, and the server refuses it in production.
- */
 async function call<T>(method: string, path: string, body?: unknown, as?: Session): Promise<T> {
   const s = as ?? current;
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["content-type"] = "application/json";
-  if (s) Object.assign(headers, { "x-dev-actor-id": s.actor, "x-dev-org-id": s.org, "x-dev-role": s.role });
+  if (s) {
+    if (s.apiKey) {
+      headers["authorization"] = `Bearer ${s.apiKey}`;
+      headers["x-api-key"] = s.apiKey;
+    }
+    Object.assign(headers, { "x-dev-actor-id": s.actor, "x-dev-org-id": s.org, "x-dev-role": s.role });
+  }
   const res = await fetch(`/api/v1${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   const text = await res.text();
-  const json = text ? JSON.parse(text) : null;
+  let json: any = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    // non-json
+  }
   if (!res.ok) throw new ApiError(res.status, json?.error?.code ?? "HTTP_" + res.status, json?.error?.message ?? res.statusText, json?.error?.details);
   return json as T;
 }
@@ -51,6 +61,7 @@ export const api = {
   post: <T = any>(p: string, b: unknown = {}, as?: Session) => call<T>("POST", p, b, as),
   put: <T = any>(p: string, b: unknown, as?: Session) => call<T>("PUT", p, b, as),
   patch: <T = any>(p: string, b: unknown, as?: Session) => call<T>("PATCH", p, b, as),
+  delete: <T = any>(p: string, as?: Session) => call<T>("DELETE", p, undefined, as),
 };
 
 export async function health(): Promise<boolean> {

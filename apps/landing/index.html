@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CORVEN — Autonomous AI Agent Security & Containment SaaS</title>
+  <meta name="description" content="CORVEN is the multi-tenant incident response SaaS for autonomous agent fleets. Continuous blast radius mapping, deterministic minimum-cut containment, human authorization, and tamper-evident proof." />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="assets/tokens.css" />
+  <link rel="stylesheet" href="assets/landing.css" />
+</head>
+<body>
+  <header class="nav"><div class="wrap">
+    <a class="logo" href="/"><img src="assets/logo.svg" alt="" width="26" height="26" />CORVEN</a>
+    <nav aria-label="Primary">
+      <a href="#platform">Platform</a>
+      <a href="#how">How It Works</a>
+      <a href="#connectors">Connectors</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#evidence">Evidence</a>
+    </nav>
+    <span class="grow"></span>
+    <a class="btn ghost sm" href="/console/">Sign In</a>
+    <a class="btn primary sm" href="/console/">Start Free Trial</a>
+  </div></header>
+
+  <main>
+    <!-- HERO SECTION -->
+    <section class="hero"><div class="wrap">
+      <div class="hero-grid">
+        <div>
+          <div class="badge-pill"><span class="dot"></span> SaaS Platform Live · Multi-Tenant M2M API Keys Ready</div>
+          <h1>Stop AI Agent Breaches Before They Touch Your Production Cloud.</h1>
+          <p class="lede">CORVEN maps interconnected autonomous AI agents, calculates the exact blast radius of a compromised tool or credential, plans the minimum safe containment boundary, enforces it with human approval, and anchors cryptographic evidence to the blockchain.</p>
+          <div class="cta">
+            <a class="btn primary" href="/console/">Start Free Trial</a>
+            <a class="btn" href="#pricing">View Pricing Plans</a>
+          </div>
+        </div>
+        <div class="panel" style="padding:16px" aria-label="A compromised agent and its containment boundary">
+          <svg class="g" viewBox="0 0 520 330" role="img" aria-label="Support agent is compromised. Cutting two edges contains it while the database agent keeps working.">
+            <path class="e hot" d="M118 80 C 200 80, 220 60, 300 60"/><path class="e hot" d="M118 80 C 190 90, 215 135, 300 140"/>
+            <path class="e hot" d="M118 80 L 118 190"/><path class="e keep" d="M118 270 C 200 270, 220 160, 300 148"/><path class="e keep" d="M330 275 C 380 275, 380 160, 330 150" />
+            <path class="e hot" d="M118 190 C 200 205, 230 250, 300 255"/>
+            <path class="e cut" d="M200 62 l 0 0"/>
+            <g transform="translate(118,80)"><rect class="node bad" x="-62" y="-20" width="124" height="40" rx="6"/><text text-anchor="middle" y="4">support-agent</text><circle class="blink" cx="-54" cy="-12" r="3" fill="var(--crit)"/></g>
+            <g transform="translate(118,190)"><rect class="node bad" x="-62" y="-20" width="124" height="40" rx="6"/><text text-anchor="middle" y="4">payment-agent</text></g>
+            <g transform="translate(118,270)"><rect class="node ok" x="-62" y="-20" width="124" height="40" rx="6"/><text text-anchor="middle" y="4">database-agent</text></g>
+            <g transform="translate(375,60)"><rect class="node res" x="-75" y="-18" width="150" height="36" rx="6"/><text text-anchor="middle" y="4">aws-iam-wallet</text></g>
+            <g transform="translate(375,142)"><rect class="node res" x="-75" y="-18" width="150" height="36" rx="6"/><text text-anchor="middle" y="4">customer-api</text></g>
+            <g transform="translate(375,255)"><rect class="node" x="-75" y="-18" width="150" height="36" rx="6"/><text text-anchor="middle" y="4">analytics-pipeline</text></g>
+            <text x="180" y="40" fill="var(--crit)">quarantine</text><text x="200" y="118" fill="var(--crit)">revoke token</text>
+            <text x="212" y="300" fill="var(--ok)">uninterrupted</text>
+          </svg>
+          <p class="note" style="margin:6px 4px 0">Live Containment Engine: 2 malicious access paths severed; healthy database workflows remain 100% active.</p>
+        </div>
+      </div>
+
+      <!-- METRICS ROW -->
+      <div class="metrics-row">
+        <div class="metric-box">
+          <div class="metric-val gradient-text">&lt;120ms</div>
+          <div class="metric-label">Blast Radius Latency</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" style="color:var(--ok)">100%</div>
+          <div class="metric-label">Deterministic Cuts</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" style="color:var(--accent)">SHA-256</div>
+          <div class="metric-label">Sealed Chain-of-Custody</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" style="color:#f59e6c">0 Outages</div>
+          <div class="metric-label">Untargeted Revocation</div>
+        </div>
+      </div>
+    </div></section>
+
+    <!-- TRUST STRIP -->
+    <section class="trust-section"><div class="wrap">
+      <div class="trust-title">Engineered for Autonomous AI Systems &amp; Cloud Workflows</div>
+      <div class="trust-badges">
+        <div class="trust-item"><span>☁️</span> AWS IAM Integration</div>
+        <div class="trust-item"><span>🐙</span> GitHub Apps Revocation</div>
+        <div class="trust-item"><span>💬</span> Slack Interactive Approvals</div>
+        <div class="trust-item"><span>🔗</span> Ethereum Sepolia Anchoring</div>
+        <div class="trust-item"><span>⚡</span> OpenTelemetry Tracing</div>
+        <div class="trust-item"><span>🛡️</span> SOC 2 Type II Architecture</div>
+      </div>
+    </div></section>
+
+    <!-- THE PROBLEM -->
+    <section class="block" id="platform"><div class="wrap">
+      <div class="kicker">The Paradigm Shift</div>
+      <h2>Switching a compromised agent off is not containment.</h2>
+      <p class="sub">Autonomous agents hold API credentials, cloud IAM privileges, database connections, and authority delegated across swarms. When an agent hallucinates, runs unauthorized prompt injections, or leaks tokens, shutting it down leaves downstream access vulnerable.</p>
+      <div class="compare">
+        <div class="panel">
+          <h3>Killing the Container <span class="tag bad">DANGEROUS INCOMPLETE</span></h3>
+          <p>The leaked tokens, API sessions, and delegated agent permissions remain active in your cloud infrastructure while your SecOps team flies blind.</p>
+        </div>
+        <div class="panel">
+          <h3>Revoking Entire Systems <span class="tag bad">REVENUE LOSS</span></h3>
+          <p>Panicking and revoking all shared database or API keys takes down your entire production stack, breaking uninvolved customer-facing services.</p>
+        </div>
+      </div>
+    </div></section>
+
+    <!-- HOW IT WORKS -->
+    <section class="block" id="how"><div class="wrap">
+      <div class="kicker">The Autonomous Response Loop</div>
+      <h2>Discover. Calculate. Contain. Verify. Prove.</h2>
+      <p class="sub">CORVEN executes a deterministic 6-stage response pipeline. Every state transition is cryptographically sealed and verifiable.</p>
+      <div class="cols">
+        <div class="cell">
+          <div class="n">01 · DISCOVER</div>
+          <h3>Continuous Topology Mapping</h3>
+          <p>Automatically registers agents, shared databases, APIs, and credentials with source provenance and confidence weighting.</p>
+        </div>
+        <div class="cell">
+          <div class="n">02 · ANALYZE</div>
+          <h3>Instant Blast Radius</h3>
+          <p>Traverses immutable graph snapshots in &lt;120ms to classify reachable assets: exposed, potentially affected, and healthy.</p>
+        </div>
+        <div class="cell">
+          <div class="n">03 · CONTAIN</div>
+          <h3>Minimum Safe Cut</h3>
+          <p>Calculates the mathematically minimal set of edges to sever so the breach cannot spread while preserving healthy workflows.</p>
+        </div>
+        <div class="cell">
+          <div class="n">04 · APPROVE</div>
+          <h3>Cryptographic Human-in-the-Loop</h3>
+          <p>Dispatches interactive Slack approval alerts with separation of duties. Approvals are cryptographically bound to exact plan hashes.</p>
+        </div>
+        <div class="cell">
+          <div class="n">05 · ENFORCE &amp; VERIFY</div>
+          <h3>Automated Cloud Containment</h3>
+          <p>Applies AWS IAM deny-all policies and GitHub token revocations, then actively probes to prove the malicious path is shut.</p>
+        </div>
+        <div class="cell">
+          <div class="n">06 · PROVE</div>
+          <h3>Dual-Chain Anchoring</h3>
+          <p>Generates an immutable incident evidence record, seals it with SHA-256, and anchors it to Arkiv DB-Chain &amp; Ethereum Sepolia.</p>
+        </div>
+      </div>
+    </div></section>
+
+    <!-- DEVELOPER EXPERIENCE & API KEYS -->
+    <section class="block" id="connectors"><div class="wrap">
+      <div class="kicker">Developer First · M2M API</div>
+      <h2>Integrate into your CI/CD &amp; Agent Swarms in Seconds.</h2>
+      <p class="sub">Authenticate with high-performance scoped API keys (<code>crv_live_...</code>) or subscribe to signed outbound webhooks.</p>
+      
+      <div class="code-preview">
+        <div class="code-header">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          <span>bash — Query Blast Radius via M2M Key</span>
+        </div>
+        <pre class="code-body">
+<span class="c-cmt"># Check agent blast radius and trigger containment plan via CORVEN SaaS API</span>
+<span class="c-cmd">curl</span> -X POST https://api.corven.ai/api/v1/incidents \
+  <span class="c-flag">-H</span> <span class="c-str">"Authorization: Bearer crv_live_9b4e3f89a12c4587de9012"</span> \
+  <span class="c-flag">-H</span> <span class="c-str">"Content-Type: application/json"</span> \
+  <span class="c-flag">-d</span> <span class="c-str">'{
+    "title": "Payment bot tool execution deviation",
+    "severity": "critical",
+    "agents": [{"agentId": "550e8400-e29b-41d4-a716-446655440000", "relationship": "compromised"}]
+  }'</span>
+        </pre>
+      </div>
+    </div></section>
+
+    <!-- SAAS PRICING SECTION -->
+    <section class="block" id="pricing"><div class="wrap">
+      <div class="kicker">Transparent Pricing</div>
+      <h2>Choose the right plan for your autonomous agent fleet.</h2>
+      <p class="sub">Start free in development, scale to mission-critical containment as your agentic infrastructure grows.</p>
+
+      <div class="pricing-grid">
+        <!-- Starter Tier -->
+        <div class="pricing-card">
+          <div class="pricing-tier">Developer</div>
+          <div class="pricing-desc">For individual developers testing agent frameworks and security models.</div>
+          <div class="pricing-price">$0 <span>/ month</span></div>
+          <ul class="pricing-features">
+            <li>Up to 10 Registered Agents</li>
+            <li>Up to 50 Dependency Edges</li>
+            <li>1 Outbound Webhook Destination</li>
+            <li>Automated Blast Radius Calculation</li>
+            <li>Console UI &amp; Graph Explorer</li>
+            <li>Local Simulation Engine</li>
+            <li>Community GitHub Support</li>
+          </ul>
+          <a class="btn" href="/console/">Start Free Developer</a>
+        </div>
+
+        <!-- Pro Tier -->
+        <div class="pricing-card featured">
+          <div class="pricing-tag">Most Popular</div>
+          <div class="pricing-tier">Team Pro</div>
+          <div class="pricing-desc">For engineering and security teams deploying autonomous agents in production.</div>
+          <div class="pricing-price">$299 <span>/ month</span></div>
+          <ul class="pricing-features">
+            <li>Up to 100 Registered Agents</li>
+            <li>Up to 1,000 Dependency Edges</li>
+            <li>10 Outbound Webhooks with HMAC</li>
+            <li>Automated AWS IAM Quarantine Connector</li>
+            <li>GitHub App Token Revocation</li>
+            <li>Interactive Slack Approvals &amp; Alerts</li>
+            <li>Arkiv DB-Chain Evidence Anchoring</li>
+            <li>Role-Based Access Control (RBAC)</li>
+            <li>Priority 24/7 Email &amp; Chat Support</li>
+          </ul>
+          <a class="btn primary" href="/console/">Start 14-Day Free Trial</a>
+        </div>
+
+        <!-- Enterprise Tier -->
+        <div class="pricing-card">
+          <div class="pricing-tier">Enterprise</div>
+          <div class="pricing-desc">For organizations with large agent swarms requiring strict compliance &amp; custom SLAs.</div>
+          <div class="pricing-price">Custom <span>/ billed annually</span></div>
+          <ul class="pricing-features">
+            <li>Unlimited Autonomous Agents &amp; Edges</li>
+            <li>Unlimited Webhooks &amp; Custom Connectors</li>
+            <li>Ethereum Sepolia On-Chain Anchoring</li>
+            <li>Dedicated VPC / Private Cloud Deployment</li>
+            <li>99.99% Uptime Guarantee (SLA)</li>
+            <li>Custom SAML / SSO / SCIM Directory Sync</li>
+            <li>Dedicated Security Architect &amp; TAM</li>
+            <li>SOC 2 Type II &amp; ISO 27001 Package</li>
+          </ul>
+          <a class="btn" href="/console/">Talk to Sales</a>
+        </div>
+      </div>
+    </div></section>
+
+    <!-- EVIDENCE SECTION -->
+    <section class="block" id="evidence"><div class="wrap">
+      <div class="kicker">Cryptographic Proof</div>
+      <h2>Independent verification that does not rely on trusting us.</h2>
+      <p class="sub">Every incident execution produces a canonical record sealed with SHA-256 and anchored outside of CORVEN's own database. Anyone can verify the integrity of the containment record.</p>
+      
+      <div class="panel evidence" role="img" aria-label="Example evidence record">
+<b>evidence #1</b>  <span class="ok">sealed</span>  schema v1  sha256 <span class="acc">ef4fc19a7efaefdd09a88319f6a73c189b274198</span>
+<b>chain</b>        previous 000000000000… → this record              <span class="ok">✓ verified</span>
+<b>sources</b>      state history, approvals, enforcement, verification   <span class="ok">✓ unchanged</span>
+<b>approval</b>     plan 326f65ec87d5…  approved by SecOps approver       <span class="ok">✓ digest bound</span>
+<b>verification</b> passed · 9 checks · malicious path blocked · healthy work intact
+<b>anchors</b>      arkiv · Rabdi DB-Chain · entity 0x0bdda9fd003b…   <span class="ok">✓ hash matches</span>
+             ethereum · Sepolia · tx 0x3d41f8021c9a01e…         <span class="ok">✓ confirmed (3 blocks)</span>
+      </div>
+      <p class="note">Verified cryptographic trail recorded during real automated incident response.</p>
+    </div></section>
+
+    <!-- FINAL CALL TO ACTION -->
+    <div class="wrap"><div class="final">
+      <h2>Experience Autonomous Incident Containment Today.</h2>
+      <p class="sub" style="margin:0 auto var(--s-5)">Launch the CORVEN Operator Console, explore live agent dependency graphs, and test real-time blast radius calculations in sandbox mode.</p>
+      <div class="cta"><a class="btn primary" href="/console/">Open Operator Console</a></div>
+    </div></div>
+  </main>
+
+  <!-- SAAS FOOTER -->
+  <footer><div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="logo" style="margin-bottom:12px"><img src="assets/logo.svg" alt="" width="22" height="22" />CORVEN</div>
+        <p style="color:var(--text-3);font-size:13px;max-width:32ch;margin:0">Infrastructure for Trusted Autonomous Systems. Real-time containment and cryptographic proof for interconnected AI agent fleets.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="#platform">Blast Radius Engine</a></li>
+          <li><a href="#how">Minimum Safe Cut</a></li>
+          <li><a href="#connectors">Cloud Connectors</a></li>
+          <li><a href="#evidence">Dual-Chain Proof</a></li>
+          <li><a href="/console/">Operator Console</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Connectors</h4>
+        <ul>
+          <li><a href="/docs/saas/05-cloud-enforcement-connectors.md">AWS IAM Quarantine</a></li>
+          <li><a href="/docs/saas/05-cloud-enforcement-connectors.md">GitHub App Revocation</a></li>
+          <li><a href="/docs/saas/05-cloud-enforcement-connectors.md">Slack Block Kit</a></li>
+          <li><a href="/docs/saas/04-webhooks-and-event-pipeline.md">Signed Webhooks</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company &amp; Trust</h4>
+        <ul>
+          <li><a href="#pricing">Pricing Plans</a></li>
+          <li><a href="/health">System Health</a></li>
+          <li><a href="https://github.com/corven">GitHub Organization</a></li>
+          <li><a href="/docs/saas/01-saas-architecture.md">SaaS Architecture</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 CORVEN Technologies, Inc. All rights reserved.</span>
+      <span><a href="/health" style="color:var(--ok)">● All Systems Operational</a> · <a href="/console/">Console</a></span>
+    </div>
+  </div></footer>
+</body>
+</html>

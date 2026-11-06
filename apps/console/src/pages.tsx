@@ -317,3 +317,357 @@ export function Gateway() {
     </>
   );
 }
+
+// ---------------------------------------------------------------------------------------------- API Keys
+export function ApiKeys() {
+  const d = useLoad(async () => (await api.get("/saas/api-keys")).data as any[]);
+  const act = useAction();
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [scopes, setScopes] = useState<string>("*");
+  const [days, setDays] = useState(30);
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+
+  const create = () => act.run(async () => {
+    const res = await api.post("/saas/api-keys", {
+      name,
+      scopes: scopes === "*" ? ["*"] : scopes.split(",").map((s) => s.trim()).filter(Boolean),
+      expiresInDays: Number(days),
+    });
+    setRevealedKey(res.data.rawKey);
+    setName("");
+    setCreating(false);
+  }, d.reload, "API key created successfully");
+
+  const revoke = (id: string, keyName: string) => act.run(async () => {
+    const confirmed = await askReason(`Revoke API key "${keyName}"?`, "Revoke Key");
+    if (!confirmed) return;
+    await api.delete(`/saas/api-keys/${id}`);
+  }, d.reload, "API key revoked");
+
+  return (
+    <>
+      <h1>M2M API Keys</h1>
+      <p className="muted">Authenticate autonomous agent pipelines and CI/CD automation using scoped machine-to-machine tokens.</p>
+      <Err e={d.error || act.error} />
+
+      {revealedKey && (
+        <div className="card" style={{ border: "1px solid var(--accent)", background: "rgba(77, 163, 255, 0.05)" }}>
+          <div className="card-h">
+            <h2 style={{ color: "var(--accent)" }}>New API Key Generated</h2>
+            <button className="primary copy-btn" onClick={() => { navigator.clipboard.writeText(revealedKey); toast("API key copied to clipboard", "ok"); }}>Copy Key</button>
+          </div>
+          <p className="muted">Make sure to copy this token now. For your security, it will never be displayed again.</p>
+          <div className="key-box">
+            <span className="key-text">{revealedKey}</span>
+          </div>
+          <button onClick={() => setRevealedKey(null)}>Done</button>
+        </div>
+      )}
+
+      <Card title={`Active API Keys (${d.data?.length ?? 0})`} actions={
+        !creating && <button className="primary" onClick={() => setCreating(true)}>+ Generate New Key</button>
+      }>
+        {creating && (
+          <div style={{ marginBottom: "var(--s-4)", paddingBottom: "var(--s-4)", borderBottom: "1px solid var(--line)" }}>
+            <h3>Create Machine-to-Machine Key</h3>
+            <div className="row wrap" style={{ marginBottom: "var(--s-3)" }}>
+              <label style={{ flex: 2 }}>Key Name<input placeholder="e.g. Production Agent Swarm" value={name} onChange={(e) => setName(e.target.value)} /></label>
+              <label style={{ flex: 2 }}>Scopes (comma-separated or *)<input value={scopes} onChange={(e) => setScopes(e.target.value)} /></label>
+              <label style={{ flex: 1 }}>Expires in (days)<input type="number" min="1" max="365" value={days} onChange={(e) => setDays(Number(e.target.value))} /></label>
+            </div>
+            <div className="row">
+              <button className="primary" disabled={!name.trim() || act.busy} onClick={create}>Generate Token</button>
+              <button onClick={() => setCreating(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {d.loading ? <Loading /> : d.data && d.data.length === 0 ? <Empty>No API keys generated yet. Create one to authenticate automated workflows.</Empty> : (
+          <table>
+            <thead><tr><th>Name</th><th>Prefix</th><th>Scopes</th><th>Created</th><th>Last Used</th><th>Expires</th><th>Action</th></tr></thead>
+            <tbody>
+              {d.data?.map((k: any) => (
+                <tr key={k.id}>
+                  <td><b>{k.name}</b></td>
+                  <td><code className="mono">{k.prefix}…</code></td>
+                  <td>{k.scopes.map((s: string) => <Pill key={s} v={s} />)}</td>
+                  <td className="muted">{when(k.createdAt)}</td>
+                  <td className="muted">{when(k.lastUsedAt)}</td>
+                  <td className="muted">{when(k.expiresAt)}</td>
+                  <td>
+                    {k.revokedAt ? <span className="bad">Revoked</span> : (
+                      <button className="danger sm" onClick={() => revoke(k.id, k.name)} disabled={act.busy}>Revoke</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------- Webhooks
+export function Webhooks() {
+  const d = useLoad(async () => {
+    const [hooks, delivs] = await Promise.all([
+      api.get("/saas/webhooks"),
+      api.get("/saas/webhooks/deliveries").catch(() => ({ data: [] })),
+    ]);
+    return { hooks: hooks.data as any[], deliveries: delivs.data as any[] };
+  });
+  const act = useAction();
+  const [adding, setAdding] = useState(false);
+  const [url, setUrl] = useState("");
+  const [events, setEvents] = useState("*");
+
+  const add = () => act.run(async () => {
+    await api.post("/saas/webhooks", {
+      url: url.trim(),
+      events: events === "*" ? ["*"] : events.split(",").map((e) => e.trim()).filter(Boolean),
+    });
+    setUrl("");
+    setAdding(false);
+  }, d.reload, "Webhook registered successfully");
+
+  const remove = (id: string) => act.run(async () => {
+    await api.delete(`/saas/webhooks/${id}`);
+  }, d.reload, "Webhook deleted");
+
+  return (
+    <>
+      <h1>Webhooks &amp; Event Stream</h1>
+      <p className="muted">Receive real-time, HMAC-signed POST notifications when incidents are detected, contained, or verified.</p>
+      <Err e={d.error || act.error} />
+
+      <Card title={`Configured Endpoints (${d.data?.hooks.length ?? 0})`} actions={
+        !adding && <button className="primary" onClick={() => setAdding(true)}>+ Add Endpoint</button>
+      }>
+        {adding && (
+          <div style={{ marginBottom: "var(--s-4)", paddingBottom: "var(--s-4)", borderBottom: "1px solid var(--line)" }}>
+            <h3>Register Webhook Endpoint</h3>
+            <div className="row wrap" style={{ marginBottom: "var(--s-3)" }}>
+              <label style={{ flex: 3 }}>Endpoint URL<input placeholder="https://api.yourdomain.com/webhooks/corven" value={url} onChange={(e) => setUrl(e.target.value)} /></label>
+              <label style={{ flex: 2 }}>Subscribed Events (comma-separated or *)<input value={events} onChange={(e) => setEvents(e.target.value)} /></label>
+            </div>
+            <div className="row">
+              <button className="primary" disabled={!url.trim() || act.busy} onClick={add}>Save Endpoint</button>
+              <button onClick={() => setAdding(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {d.loading ? <Loading /> : d.data && d.data.hooks.length === 0 ? <Empty>No webhooks configured. Add an endpoint to receive signed incident events.</Empty> : (
+          <table>
+            <thead><tr><th>URL</th><th>Events</th><th>Status</th><th>HMAC Secret</th><th>Created</th><th>Action</th></tr></thead>
+            <tbody>
+              {d.data?.hooks.map((h: any) => (
+                <tr key={h.id}>
+                  <td><code className="mono">{h.url}</code></td>
+                  <td>{h.events.map((e: string) => <Pill key={e} v={e} />)}</td>
+                  <td><Pill v={h.status} /></td>
+                  <td><code className="mono">{h.secret.slice(0, 10)}…</code></td>
+                  <td className="muted">{when(h.createdAt)}</td>
+                  <td><button className="danger sm" onClick={() => remove(h.id)} disabled={act.busy}>Delete</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+
+      <Card title={`Recent Event Deliveries (${d.data?.deliveries.length ?? 0})`}>
+        {d.data && d.data.deliveries.length === 0 ? <Empty>No event deliveries recorded yet.</Empty> : (
+          <table>
+            <thead><tr><th>Event</th><th>Status</th><th>Latency</th><th>Timestamp</th><th>Error / Details</th></tr></thead>
+            <tbody>
+              {d.data?.deliveries.map((dl: any) => (
+                <tr key={dl.id}>
+                  <td><b>{dl.event}</b></td>
+                  <td><span className={`pill ${dl.success ? "p-passed" : "p-failed"}`}>{dl.statusCode ? `HTTP ${dl.statusCode}` : dl.success ? "OK" : "FAILED"}</span></td>
+                  <td className="mono">{dl.durationMs !== null ? `${dl.durationMs}ms` : "—"}</td>
+                  <td className="muted">{when(dl.createdAt)}</td>
+                  <td className="muted" style={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis" }}>{dl.error ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------- Team & Members
+export function TeamMembers() {
+  const d = useLoad(async () => {
+    const [org, mems] = await Promise.all([
+      api.get("/saas/organizations/current").catch(() => ({ data: null })),
+      api.get("/saas/organizations/members").catch(() => ({ data: [] })),
+    ]);
+    return { org: org.data as any, members: mems.data as any[] };
+  });
+  const act = useAction();
+  const [inviting, setInviting] = useState(false);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("operator");
+
+  const invite = () => act.run(async () => {
+    await api.post("/saas/organizations/members", {
+      email: email.trim(),
+      role,
+    });
+    setEmail("");
+    setInviting(false);
+  }, d.reload, "Team member added");
+
+  const remove = (memberId: string, memEmail: string) => act.run(async () => {
+    const confirmed = await askReason(`Remove ${memEmail} from organization?`, "Remove Member");
+    if (!confirmed) return;
+    await api.delete(`/saas/organizations/members/${memberId}`);
+  }, d.reload, "Member removed");
+
+  return (
+    <>
+      <h1>Team &amp; Access Control</h1>
+      <p className="muted">Manage organization members, workspace access, and role-based permissions.</p>
+      <Err e={d.error || act.error} />
+
+      <Card title="Organization Profile" actions={
+        d.data?.org && <span className={`tier-badge tier-${d.data.org.tier}`}>{d.data.org.tier} tier</span>
+      }>
+        <div className="row wrap" style={{ gap: "var(--s-5)" }}>
+          <div><span className="muted">Organization:</span> <b>{d.data?.org?.name ?? "Default Workspace"}</b></div>
+          <div><span className="muted">Slug:</span> <code className="mono">{d.data?.org?.slug ?? "default"}</code></div>
+          <div><span className="muted">Plan Status:</span> <Pill v={d.data?.org?.planStatus ?? "active"} /></div>
+        </div>
+      </Card>
+
+      <Card title={`Members (${d.data?.members.length ?? 0})`} actions={
+        !inviting && <button className="primary" onClick={() => setInviting(true)}>+ Invite Member</button>
+      }>
+        {inviting && (
+          <div style={{ marginBottom: "var(--s-4)", paddingBottom: "var(--s-4)", borderBottom: "1px solid var(--line)" }}>
+            <h3>Invite Team Member</h3>
+            <div className="row wrap" style={{ marginBottom: "var(--s-3)" }}>
+              <label style={{ flex: 3 }}>Email Address<input placeholder="user@company.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+              <label style={{ flex: 2 }}>Role
+                <select value={role} onChange={(e) => setRole(e.target.value)}>
+                  <option value="admin">Admin (full access, api keys, settings)</option>
+                  <option value="operator">Operator (incidents, discovery, simulation)</option>
+                  <option value="approver">Approver (containment plan decisions)</option>
+                  <option value="viewer">Viewer (read-only audit access)</option>
+                </select>
+              </label>
+            </div>
+            <div className="row">
+              <button className="primary" disabled={!email.includes("@") || act.busy} onClick={invite}>Add Member</button>
+              <button onClick={() => setInviting(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {d.loading ? <Loading /> : (
+          <table>
+            <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Added</th><th>Action</th></tr></thead>
+            <tbody>
+              {d.data?.members.map((m: any) => (
+                <tr key={m.id}>
+                  <td><b>{m.email}</b></td>
+                  <td><Pill v={m.role} /></td>
+                  <td><Pill v={m.status} /></td>
+                  <td className="muted">{when(m.createdAt)}</td>
+                  <td><button className="danger sm" onClick={() => remove(m.id, m.email)} disabled={act.busy}>Remove</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------- Plan & Usage
+export function PlanUsage() {
+  const d = useLoad(async () => {
+    const [org, agents, deps, hooks] = await Promise.all([
+      api.get("/saas/organizations/current").catch(() => ({ data: { tier: "pro", name: "Production Org", planStatus: "active" } })),
+      api.get("/agents?limit=1"),
+      api.get("/dependencies?limit=1").catch(() => ({ pagination: { total: 0 } })),
+      api.get("/saas/webhooks").catch(() => ({ data: [] })),
+    ]);
+    return {
+      org: org.data as any,
+      agentsCount: agents.pagination.total as number,
+      edgesCount: (deps.pagination?.total ?? 0) as number,
+      webhooksCount: (hooks.data?.length ?? 0) as number,
+    };
+  });
+
+  const tier = d.data?.org?.tier ?? "pro";
+  const limits = tier === "enterprise"
+    ? { maxAgents: Infinity, maxEdges: Infinity, maxWebhooks: Infinity }
+    : tier === "pro"
+    ? { maxAgents: 100, maxEdges: 1000, maxWebhooks: 10 }
+    : { maxAgents: 10, maxEdges: 50, maxWebhooks: 1 };
+
+  const pct = (val: number, max: number) => Math.min(100, Math.round((val / (Number.isFinite(max) ? max : 1000)) * 100));
+
+  return (
+    <>
+      <h1>Plan &amp; Usage Quotas</h1>
+      <p className="muted">Monitor real-time resource utilization against your active subscription tier.</p>
+      <Err e={d.error} />
+
+      <div className="grid2">
+        <Card title="Current Subscription">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "var(--s-3)" }}>
+            <span style={{ fontSize: "1.6rem", fontWeight: 700, textTransform: "capitalize" }}>{tier} Plan</span>
+            <span className={`tier-badge tier-${tier}`}>{d.data?.org?.planStatus ?? "active"}</span>
+          </div>
+          <p className="muted">Your plan includes real-time blast radius mapping, automated containment execution, and multi-cloud enforcement connectors.</p>
+          <div className="row" style={{ marginTop: "var(--s-4)" }}>
+            <button className="primary" onClick={() => toast("Upgrade request sent to sales", "ok")}>Upgrade Plan</button>
+            <button onClick={() => toast("Billing portal integration ready in production", "info")}>Manage Invoices</button>
+          </div>
+        </Card>
+
+        <Card title="Resource Metering">
+          <div className="quota-item">
+            <div className="quota-header">
+              <span className="quota-title">Registered Agents</span>
+              <span className="quota-numbers">{d.data?.agentsCount ?? 0} / {Number.isFinite(limits.maxAgents) ? limits.maxAgents : "∞"}</span>
+            </div>
+            <div className="meter">
+              <div className="meter-fill" style={{ width: `${pct(d.data?.agentsCount ?? 0, limits.maxAgents)}%` }} />
+            </div>
+          </div>
+
+          <div className="quota-item">
+            <div className="quota-header">
+              <span className="quota-title">Dependency Edges</span>
+              <span className="quota-numbers">{d.data?.edgesCount ?? 0} / {Number.isFinite(limits.maxEdges) ? limits.maxEdges : "∞"}</span>
+            </div>
+            <div className="meter">
+              <div className="meter-fill" style={{ width: `${pct(d.data?.edgesCount ?? 0, limits.maxEdges)}%` }} />
+            </div>
+          </div>
+
+          <div className="quota-item">
+            <div className="quota-header">
+              <span className="quota-title">Configured Webhooks</span>
+              <span className="quota-numbers">{d.data?.webhooksCount ?? 0} / {Number.isFinite(limits.maxWebhooks) ? limits.maxWebhooks : "∞"}</span>
+            </div>
+            <div className="meter">
+              <div className="meter-fill" style={{ width: `${pct(d.data?.webhooksCount ?? 0, limits.maxWebhooks)}%` }} />
+            </div>
+          </div>
+        </Card>
+      </div>
+    </>
+  );
+}
