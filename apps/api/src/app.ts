@@ -11,6 +11,7 @@ import { createContainment, registerContainment } from "./modules/containment/in
 import { createDependencyDiscovery, registerDependencyDiscovery } from "./modules/dependency-discovery/index.js";
 import type { JobQueue } from "./modules/dependency-discovery/jobs/queue.js";
 import { createAuthorizationGateway, registerAuthorizationGateway, type GatewayHooks, type ResourceExecutors, type ApprovalVerifier, type AgentAuthConfig } from "./modules/authorization-gateway/index.js";
+import { createApprovalService, registerApprovalService } from "./modules/approval-service/index.js";
 import { createIncidentManagement, registerIncidentManagement } from "./modules/incident-management/index.js";
 import { createGraphSnapshots, registerGraphSnapshots } from "./modules/graph-snapshot/index.js";
 import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
@@ -20,6 +21,7 @@ declare module "fastify" {
   interface FastifyInstance {
     incidentManagement: ReturnType<typeof createIncidentManagement>;
     gateway: ReturnType<typeof createAuthorizationGateway>;
+    approvals: ReturnType<typeof createApprovalService>;
   }
   interface FastifyRequest {
     principal: Principal;
@@ -37,6 +39,9 @@ export interface BuildAppOptions {
   graphSnapshots?: ReturnType<typeof createGraphSnapshots>;
   incidentManagement?: ReturnType<typeof createIncidentManagement>;
   gateway?: ReturnType<typeof createAuthorizationGateway>;
+  approvals?: ReturnType<typeof createApprovalService>;
+  /** Clock for time-based rules (approval expiry and execution windows). Tests move it; production uses real time. */
+  now?: () => Date;
   /** Gateway wiring when `gateway` is not supplied. */
   gatewayOptions?: { agentAuth?: AgentAuthConfig | null; hooks?: GatewayHooks; executors?: ResourceExecutors; approvals?: ApprovalVerifier };
   discovery?: ReturnType<typeof createDependencyDiscovery>;
@@ -120,6 +125,8 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
       containment: containment.containment,
     });
   await registerIncidentManagement(app, incidents);
+  const approvals = opts.approvals ?? createApprovalService(opts.db, incidents, opts.now);
+  await registerApprovalService(app, approvals);
   const agentReader = new AgentRegistryReader(opts.db, registry.repo);
   const resourceLookup = { getResource: (org: string, id: string) => dependencyRegistry.resourcesRepo.find(opts.db, org, id) };
   const gateway =
@@ -137,12 +144,15 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
       coverageGraph: liveGraph,
       incidents: incidents.reader,
       agentStatus: registry.status,
+      // The gateway asks the Approval Service whether this exact plan is approved; nothing else can say yes.
+      approvals: approvals.approvals,
       ...opts.gatewayOptions,
     });
   await registerAuthorizationGateway(app, gateway);
   // Exposed so trusted in-process modules (and tests) can use the service as the `system` principal. Never reachable over HTTP.
   app.decorate("incidentManagement", incidents);
   app.decorate("gateway", gateway);
+  app.decorate("approvals", approvals);
   const discovery = opts.discovery ?? createDependencyDiscovery(opts.db, registry.repo, dependencyRegistry, opts.discoveryQueue);
   await registerDependencyDiscovery(app, discovery);
   await discovery.start();

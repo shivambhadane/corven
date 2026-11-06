@@ -18,18 +18,19 @@ describe("migrations", () => {
     url.pathname = `/${dbName}`;
     const handle = createDb(url.toString());
     const tables = async () =>
-      (await handle.pool.query("select table_name from information_schema.tables where table_schema='public' and table_name in ('agents','agent_capabilities','agent_identities','agent_status_history','agent_audit_logs','dependencies','dependency_versions','dependency_audit_logs','dependency_evidence','graph_snapshots','resources','discovery_sources','discovery_runs','discovery_observations','discovery_reconciliation_results','discovery_reviews','discovery_runtime_events','incidents','incident_state_history','incident_events','incident_audit_logs','incident_agents','incident_resources','incident_assignments','incident_notes','incident_analysis_references','agent_credentials','credential_rotation_history','permissions','resource_enforcement','gateway_audit_logs','gateway_decisions','execution_records','enforcement_actions','enforcement_action_events') order by 1")).rows.map((r) => r.table_name);
+      (await handle.pool.query("select table_name from information_schema.tables where table_schema='public' and table_name in ('agents','agent_capabilities','agent_identities','agent_status_history','agent_audit_logs','dependencies','dependency_versions','dependency_audit_logs','dependency_evidence','graph_snapshots','resources','discovery_sources','discovery_runs','discovery_observations','discovery_reconciliation_results','discovery_reviews','discovery_runtime_events','incidents','incident_state_history','incident_events','incident_audit_logs','incident_agents','incident_resources','incident_assignments','incident_notes','incident_analysis_references','agent_credentials','credential_rotation_history','permissions','resource_enforcement','gateway_audit_logs','gateway_decisions','execution_records','enforcement_actions','enforcement_action_events','approval_policies','approval_requests','approval_decisions','approval_audit_logs') order by 1")).rows.map((r) => r.table_name);
     try {
       await runMigrations(handle.db);
       await runMigrations(handle.db); // idempotent
       const expected = [
-        "agent_audit_logs", "agent_capabilities", "agent_credentials", "agent_identities", "agent_status_history", "agents", "credential_rotation_history",
+        "agent_audit_logs", "agent_capabilities", "agent_credentials", "agent_identities", "agent_status_history", "agents", "approval_audit_logs", "approval_decisions", "approval_policies", "approval_requests", "credential_rotation_history",
         "dependencies", "dependency_audit_logs", "dependency_evidence", "dependency_versions", "discovery_observations", "discovery_reconciliation_results", "discovery_reviews", "discovery_runs", "discovery_runtime_events", "discovery_sources", "enforcement_action_events", "enforcement_actions", "execution_records", "gateway_audit_logs", "gateway_decisions", "graph_snapshots", "incident_agents", "incident_analysis_references", "incident_assignments", "incident_audit_logs", "incident_events", "incident_notes", "incident_resources", "incident_state_history", "incidents", "permissions", "resource_enforcement", "resources",
       ];
       expect(await tables()).toEqual(expected);
 
       // newest first
       for (const f of [
+        "0015_approval_append_only", "0014_approval_service",
         "0013_gateway_append_only", "0012_authorization_gateway",
         "0011_incident_append_only", "0010_incident_management",
         "0009_discovery_append_only", "0008_dependency_discovery",

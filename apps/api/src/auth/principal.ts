@@ -1,4 +1,5 @@
-export const ROLES = ["admin", "operator", "viewer"] as const;
+/** `approver` is the Incident Approver: reads everything an operator can and decides containment approvals, but changes nothing else. */
+export const ROLES = ["admin", "operator", "viewer", "approver"] as const;
 export type Role = (typeof ROLES)[number];
 
 /**

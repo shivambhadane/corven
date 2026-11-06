@@ -99,6 +99,20 @@
       "when": 1793950922860,
       "tag": "0013_gateway_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793952967502,
+      "tag": "0014_approval_service",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793952968584,
+      "tag": "0015_approval_append_only",
+      "breakpoints": true
     }
   ]
 }

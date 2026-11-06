@@ -37,7 +37,7 @@ export const INTERNAL_EVENT_TYPES = [
   "incident.transitioned", "incident.note_added", "approval.requested",
 ] as const;
 export const EXTERNAL_EVENT_TYPES = [
-  "detection.signal_received", "approval.granted", "approval.rejected", "enforcement.result_received",
+  "detection.signal_received", "approval.granted", "approval.rejected", "approval.expired", "approval.cancelled", "approval.invalidated", "enforcement.result_received",
   "verification.result_received", "evidence.generated",
 ] as const;
 export type InternalEventType = (typeof INTERNAL_EVENT_TYPES)[number];

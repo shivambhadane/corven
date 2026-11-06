@@ -44,8 +44,11 @@ export async function createCtx(repo?: AgentRepository, depRepo?: DependencyRepo
   const clock = { offsetMs: 0 };
   const approvedPlans = new Set<string>();
   const agentAuth = { ...defaultAgentAuthConfig(Buffer.alloc(32, 7)), now: () => new Date(Date.now() + clock.offsetMs) };
-  const approvals = { isPlanApproved: async (org: string, incidentId: string, planHash: string) => approvedPlans.has(`${org}:${incidentId}:${planHash}`) };
-  const app = await buildApp({ db: handle.db, authenticate: devHeaderAuthenticator, registry, dependencyRegistry: depRegistry, graphEngine, discovery, gatewayOptions: { agentAuth, hooks, executors, approvals } });
+  // Tests may pre-approve a plan directly (gateway tests); otherwise the real Approval Service decides.
+  let realApprovals: { isPlanApproved(o: string, i: string, h: string): Promise<boolean> } | null = null;
+  const approvals = { isPlanApproved: async (org: string, incidentId: string, planHash: string) => approvedPlans.has(`${org}:${incidentId}:${planHash}`) || (realApprovals ? realApprovals.isPlanApproved(org, incidentId, planHash) : false) };
+  const app = await buildApp({ db: handle.db, authenticate: devHeaderAuthenticator, registry, dependencyRegistry: depRegistry, graphEngine, discovery, gatewayOptions: { agentAuth, hooks, executors, approvals }, now: () => new Date(Date.now() + clock.offsetMs) });
+  realApprovals = app.approvals.approvals;
   await app.ready();
   return {
     handle,

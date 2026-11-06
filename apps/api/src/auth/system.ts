@@ -17,3 +17,6 @@ export const systemPrincipal = (organizationId: string, actorId: string = DISCOV
   organizationId,
   role: "system",
 });
+
+/** Fixed audit identity for lifecycle changes the Approval Service makes on behalf of the approvers it recorded. */
+export const APPROVAL_ACTOR_ID = "00000000-0000-4000-8000-0000000a9900";

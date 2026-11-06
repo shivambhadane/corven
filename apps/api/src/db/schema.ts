@@ -800,6 +800,7 @@ export const incidentAnalysisReferences = pgTable(
     incidentFk("incident_analysis_refs_incident_fk", t),
     foreignKey({ name: "incident_analysis_refs_snapshot_fk", columns: [t.snapshotId, t.organizationId], foreignColumns: [graphSnapshots.id, graphSnapshots.organizationId] }).onDelete("restrict"),
     unique("incident_analysis_refs_version_unique").on(t.incidentId, t.kind, t.version),
+    unique("incident_analysis_refs_id_org_unique").on(t.id, t.organizationId),
     index("incident_analysis_refs_idx").on(t.organizationId, t.incidentId, t.kind, t.version),
     check("incident_analysis_refs_kind_check", sql`${t.kind} in ('graph_snapshot','blast_radius','containment_plan')`),
     check("incident_analysis_refs_hash_check", sql`${t.snapshotHash} ~ '^[0-9a-f]{64}$'`),
@@ -1061,4 +1062,118 @@ export const enforcementActionEvents = pgTable(
     foreignKey({ name: "enforcement_action_events_action_fk", columns: [t.actionId, t.organizationId], foreignColumns: [enforcementActions.id, enforcementActions.organizationId] }).onDelete("restrict"),
     index("enforcement_action_events_idx").on(t.organizationId, t.actionId, t.seq),
   ],
+);
+
+// ---------------------------------------------------------------------------
+// Approval Service
+// ---------------------------------------------------------------------------
+
+/** One policy per organization. Each approval request copies the policy it was created under. */
+export const approvalPolicies = pgTable(
+  "approval_policies",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    requiredApprovals: integer("required_approvals").notNull(),
+    elevatedRequiredApprovals: integer("elevated_required_approvals").notNull(),
+    separationOfDuties: boolean("separation_of_duties").notNull(),
+    expiryMinutes: integer("expiry_minutes").notNull(),
+    executionWindowMinutes: integer("execution_window_minutes").notNull(),
+    updatedBy: uuid("updated_by").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("approval_policies_org_unique").on(t.organizationId),
+    check("approval_policies_counts_check", sql`${t.requiredApprovals} between 1 and 5 and ${t.elevatedRequiredApprovals} between ${t.requiredApprovals} and 5`),
+    check("approval_policies_minutes_check", sql`${t.expiryMinutes} between 5 and 10080 and ${t.executionWindowMinutes} between 5 and 1440`),
+  ],
+);
+
+/**
+ * A request to approve one exact containment plan. `approval_digest` binds the
+ * approval to the incident, the plan reference, the engine's plan hash, the
+ * pinned snapshot hash and the canonical result hash (schema-versioned).
+ * Only status and decision fields move; a trigger freezes the binding.
+ */
+export const approvalRequests = pgTable(
+  "approval_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    planReferenceId: uuid("plan_reference_id").notNull(),
+    planVersion: integer("plan_version").notNull(),
+    planHash: varchar("plan_hash", { length: 64 }).notNull(),
+    snapshotHash: varchar("snapshot_hash", { length: 64 }).notNull(),
+    resultHash: varchar("result_hash", { length: 64 }).notNull(),
+    schemaVersion: integer("schema_version").notNull(),
+    approvalDigest: varchar("approval_digest", { length: 64 }).notNull(),
+    risk: varchar("risk", { length: 16 }).notNull(),
+    riskReasons: jsonb("risk_reasons").notNull().default(sql`'[]'::jsonb`),
+    policy: jsonb("policy").notNull(),
+    requiredApprovals: integer("required_approvals").notNull(),
+    status: varchar("status", { length: 16 }).notNull().default("pending"),
+    requestedBy: uuid("requested_by").notNull(),
+    comment: text("comment"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    executableUntil: timestamp("executable_until", { withTimezone: true }),
+    closedReason: text("closed_reason"),
+    /** Whether the incident lifecycle and timeline reflect the final status yet. Retried until true. */
+    incidentSynced: boolean("incident_synced").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("approval_requests_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({ name: "approval_requests_incident_fk", columns: [t.incidentId, t.organizationId], foreignColumns: [incidents.id, incidents.organizationId] }).onDelete("restrict"),
+    foreignKey({ name: "approval_requests_plan_fk", columns: [t.planReferenceId, t.organizationId], foreignColumns: [incidentAnalysisReferences.id, incidentAnalysisReferences.organizationId] }).onDelete("restrict"),
+    uniqueIndex("approval_requests_one_pending").on(t.organizationId, t.incidentId).where(sql`${t.status} = 'pending'`),
+    index("approval_requests_org_idx").on(t.organizationId, t.createdAt, t.id),
+    index("approval_requests_lookup_idx").on(t.organizationId, t.incidentId, t.planHash, t.status),
+    check("approval_requests_status_check", sql`${t.status} in ('pending','approved','rejected','expired','cancelled','invalidated')`),
+    check("approval_requests_risk_check", sql`${t.risk} in ('standard','elevated')`),
+    check("approval_requests_hash_check", sql`${t.planHash} ~ '^[0-9a-f]{64}$' and ${t.approvalDigest} ~ '^[0-9a-f]{64}$'`),
+  ],
+);
+
+/** Append-only. One decision per approver per request; it records exactly what was reviewed. */
+export const approvalDecisions = pgTable(
+  "approval_decisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    approvalId: uuid("approval_id").notNull(),
+    decision: varchar("decision", { length: 8 }).notNull(),
+    decidedBy: uuid("decided_by").notNull(),
+    role: varchar("role", { length: 16 }).notNull(),
+    comment: text("comment"),
+    planHash: varchar("plan_hash", { length: 64 }).notNull(),
+    approvalDigest: varchar("approval_digest", { length: 64 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ name: "approval_decisions_request_fk", columns: [t.approvalId, t.organizationId], foreignColumns: [approvalRequests.id, approvalRequests.organizationId] }).onDelete("restrict"),
+    unique("approval_decisions_one_per_approver").on(t.approvalId, t.decidedBy),
+    check("approval_decisions_decision_check", sql`${t.decision} in ('approve','reject')`),
+  ],
+);
+
+/** Append-only audit of requests, decisions, closures and policy changes. */
+export const approvalAuditLogs = pgTable(
+  "approval_audit_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity(),
+    organizationId: uuid("organization_id").notNull(),
+    approvalId: uuid("approval_id"),
+    actorId: uuid("actor_id").notNull(),
+    actorType: varchar("actor_type", { length: 8 }).notNull(),
+    action: varchar("action", { length: 48 }).notNull(),
+    beforeState: jsonb("before_state"),
+    afterState: jsonb("after_state"),
+    correlationId: varchar("correlation_id", { length: 100 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("approval_audit_logs_idx").on(t.organizationId, t.approvalId, t.seq)],
 );
