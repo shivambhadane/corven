@@ -30,6 +30,16 @@ export class ResourceRepository {
     return rows[0] ? toResource(rows[0]) : null;
   }
 
+  async listAll(tx: Executor, organizationId: string): Promise<Resource[]> {
+    const out: Resource[] = [];
+    const limit = 500;
+    for (let offset = 0; ; offset += limit) {
+      const { items } = await this.list(tx, organizationId, { limit, offset });
+      out.push(...items);
+      if (items.length < limit) return out;
+    }
+  }
+
   async findByExternalReference(tx: Executor, organizationId: string, externalReference: string): Promise<Resource | null> {
     const rows = await tx
       .select()
@@ -40,10 +50,8 @@ export class ResourceRepository {
 
   async list(tx: Executor, organizationId: string, page: { limit: number; offset: number }): Promise<{ items: Resource[]; total: number }> {
     const where = eq(resources.organizationId, organizationId);
-    const [rows, totals] = await Promise.all([
-      tx.select().from(resources).where(where).orderBy(desc(resources.createdAt), desc(resources.id)).limit(page.limit).offset(page.offset),
-      tx.select({ n: count() }).from(resources).where(where),
-    ]);
+    const rows = await tx.select().from(resources).where(where).orderBy(desc(resources.createdAt), desc(resources.id)).limit(page.limit).offset(page.offset);
+    const totals = await tx.select({ n: count() }).from(resources).where(where);
     return { items: rows.map(toResource), total: totals[0]?.n ?? 0 };
   }
 }

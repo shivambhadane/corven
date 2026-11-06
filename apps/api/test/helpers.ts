@@ -6,6 +6,7 @@ import { devHeaderAuthenticator } from "../src/auth/dev-auth.js";
 import type { Role } from "../src/auth/principal.js";
 import { createDb, type DbHandle } from "../src/db/client.js";
 import { createAgentRegistry } from "../src/modules/agent-registry/index.js";
+import { createGraphEngine } from "../src/modules/graph-engine/index.js";
 import { createDependencyRegistry } from "../src/modules/dependency-registry/index.js";
 import type { DependencyRepository } from "../src/modules/dependency-registry/repositories/dependency.repository.js";
 import type { AgentRepository } from "../src/modules/agent-registry/repositories/agent.repository.js";
@@ -15,20 +16,24 @@ export interface TestCtx {
   app: FastifyInstance;
   registry: ReturnType<typeof createAgentRegistry>;
   depRegistry: ReturnType<typeof createDependencyRegistry>;
+  graphEngine: ReturnType<typeof createGraphEngine>;
   close(): Promise<void>;
 }
 
-export async function createCtx(repo?: AgentRepository, depRepo?: DependencyRepository): Promise<TestCtx> {
+export async function createCtx(repo?: AgentRepository, depRepo?: DependencyRepository, graphOverride?: (real: ReturnType<typeof createGraphEngine>) => ReturnType<typeof createGraphEngine>): Promise<TestCtx> {
   const handle = createDb(inject("dbUrl"));
   const registry = createAgentRegistry(handle.db, repo);
   const depRegistry = createDependencyRegistry(handle.db, registry.repo, depRepo);
-  const app = await buildApp({ db: handle.db, authenticate: devHeaderAuthenticator, registry, dependencyRegistry: depRegistry });
+  const realGraph = createGraphEngine(handle.db, registry.repo, depRegistry.resourcesRepo, depRegistry.repo);
+  const graphEngine = graphOverride ? graphOverride(realGraph) : realGraph;
+  const app = await buildApp({ db: handle.db, authenticate: devHeaderAuthenticator, registry, dependencyRegistry: depRegistry, graphEngine });
   await app.ready();
   return {
     handle,
     app,
     registry,
     depRegistry,
+    graphEngine,
     close: async () => {
       await app.close();
       await handle.close();
