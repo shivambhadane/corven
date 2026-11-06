@@ -1254,3 +1254,90 @@ export const verificationChecks = pgTable(
     check("verification_checks_result_check", sql`${t.result} in ('passed','failed','inconclusive')`),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Evidence Service
+// ---------------------------------------------------------------------------
+
+/**
+ * A sealed, canonical incident record. `content` is the canonical document and
+ * `content_hash` its SHA-256; both are frozen by a trigger. Records for the same
+ * incident form a hash chain through `previous_hash`. Only the lifecycle status
+ * and verification bookkeeping move.
+ */
+export const evidenceRecords = pgTable(
+  "evidence_records",
+  {
+    id: uuid("id").primaryKey(),
+    organizationId: uuid("organization_id").notNull(),
+    incidentId: uuid("incident_id").notNull(),
+    sequence: integer("sequence").notNull(),
+    schemaVersion: integer("schema_version").notNull(),
+    previousEvidenceId: uuid("previous_evidence_id"),
+    previousHash: varchar("previous_hash", { length: 64 }),
+    content: jsonb("content").notNull(),
+    contentHash: varchar("content_hash", { length: 64 }).notNull(),
+    status: varchar("status", { length: 16 }).notNull(),
+    lastVerifiedAt: timestamp("last_verified_at", { withTimezone: true }),
+    createdBy: uuid("created_by").notNull(),
+    createdByType: varchar("created_by_type", { length: 8 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique("evidence_records_id_org_unique").on(t.id, t.organizationId),
+    foreignKey({ name: "evidence_records_incident_fk", columns: [t.incidentId, t.organizationId], foreignColumns: [incidents.id, incidents.organizationId] }).onDelete("restrict"),
+    unique("evidence_records_sequence_unique").on(t.incidentId, t.sequence),
+    index("evidence_records_incident_idx").on(t.organizationId, t.incidentId, t.sequence),
+    check("evidence_records_status_check", sql`${t.status} in ('sealed','anchor_pending','anchored','anchor_failed','verified','invalid')`),
+    check("evidence_records_hash_check", sql`${t.contentHash} ~ '^[0-9a-f]{64}$'`),
+  ],
+);
+
+/** One external anchor of an evidence hash. Only the hash and identifiers leave CORVEN, never the content. */
+export const evidenceAnchors = pgTable(
+  "evidence_anchors",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    evidenceId: uuid("evidence_id").notNull(),
+    target: varchar("target", { length: 16 }).notNull(),
+    status: varchar("status", { length: 16 }).notNull(),
+    anchoredHash: varchar("anchored_hash", { length: 64 }).notNull(),
+    externalReference: varchar("external_reference", { length: 200 }),
+    chainId: integer("chain_id"),
+    contractAddress: varchar("contract_address", { length: 64 }),
+    blockNumber: bigint("block_number", { mode: "number" }),
+    confirmations: integer("confirmations"),
+    requiredConfirmations: integer("required_confirmations"),
+    error: text("error"),
+    attempts: integer("attempts").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ name: "evidence_anchors_evidence_fk", columns: [t.evidenceId, t.organizationId], foreignColumns: [evidenceRecords.id, evidenceRecords.organizationId] }).onDelete("restrict"),
+    unique("evidence_anchors_one_per_target").on(t.evidenceId, t.target),
+    check("evidence_anchors_target_check", sql`${t.target} in ('arkiv','ethereum')`),
+    check("evidence_anchors_status_check", sql`${t.status} in ('submitted','confirmed','failed')`),
+  ],
+);
+
+/** Append-only log of every integrity verification and what each step found. */
+export const evidenceVerificationLogs = pgTable(
+  "evidence_verification_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id").notNull(),
+    evidenceId: uuid("evidence_id").notNull(),
+    valid: boolean("valid").notNull(),
+    checks: jsonb("checks").notNull(),
+    actorId: uuid("actor_id").notNull(),
+    actorType: varchar("actor_type", { length: 8 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({ name: "evidence_verification_logs_evidence_fk", columns: [t.evidenceId, t.organizationId], foreignColumns: [evidenceRecords.id, evidenceRecords.organizationId] }).onDelete("restrict"),
+    index("evidence_verification_logs_idx").on(t.organizationId, t.evidenceId, t.createdAt),
+  ],
+);

@@ -127,6 +127,20 @@
       "when": 1793953693006,
       "tag": "0017_verification_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793954411214,
+      "tag": "0018_evidence_service",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793954412219,
+      "tag": "0019_evidence_append_only",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ import type { JobQueue } from "./modules/dependency-discovery/jobs/queue.js";
 import { createAuthorizationGateway, registerAuthorizationGateway, type GatewayHooks, type ResourceExecutors, type ApprovalVerifier, type AgentAuthConfig } from "./modules/authorization-gateway/index.js";
 import { createApprovalService, registerApprovalService } from "./modules/approval-service/index.js";
 import { createVerificationService, registerVerificationService } from "./modules/verification-service/index.js";
+import { createEvidenceService, registerEvidenceService, type EvidenceConfig } from "./modules/evidence-service/index.js";
 import { createIncidentManagement, registerIncidentManagement } from "./modules/incident-management/index.js";
 import { createGraphSnapshots, registerGraphSnapshots } from "./modules/graph-snapshot/index.js";
 import { createGraphEngine, registerGraphEngine } from "./modules/graph-engine/index.js";
@@ -24,6 +25,7 @@ declare module "fastify" {
     gateway: ReturnType<typeof createAuthorizationGateway>;
     approvals: ReturnType<typeof createApprovalService>;
     verification: ReturnType<typeof createVerificationService>;
+    evidence: ReturnType<typeof createEvidenceService>;
   }
   interface FastifyRequest {
     principal: Principal;
@@ -43,6 +45,9 @@ export interface BuildAppOptions {
   gateway?: ReturnType<typeof createAuthorizationGateway>;
   approvals?: ReturnType<typeof createApprovalService>;
   verification?: ReturnType<typeof createVerificationService>;
+  evidence?: ReturnType<typeof createEvidenceService>;
+  /** Arkiv/Ethereum clients and confirmation depth. Without clients, anchoring is unavailable (records are still sealed locally). */
+  evidenceConfig?: EvidenceConfig;
   /** Clock for time-based rules (approval expiry and execution windows). Tests move it; production uses real time. */
   now?: () => Date;
   /** Gateway wiring when `gateway` is not supplied. */
@@ -163,11 +168,14 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
       },
     });
   await registerVerificationService(app, verification);
+  const evidence = opts.evidence ?? createEvidenceService(opts.db, incidents, opts.evidenceConfig);
+  await registerEvidenceService(app, evidence);
   // Exposed so trusted in-process modules (and tests) can use the service as the `system` principal. Never reachable over HTTP.
   app.decorate("incidentManagement", incidents);
   app.decorate("gateway", gateway);
   app.decorate("approvals", approvals);
   app.decorate("verification", verification);
+  app.decorate("evidence", evidence);
   const discovery = opts.discovery ?? createDependencyDiscovery(opts.db, registry.repo, dependencyRegistry, opts.discoveryQueue);
   await registerDependencyDiscovery(app, discovery);
   await discovery.start();
