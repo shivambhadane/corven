@@ -48,6 +48,7 @@ describe("migrations", () => {
       await runMigrations(handle.db);
       expect(await tables()).toEqual(expected);
     } finally {
+      handle.pool.on("error", () => undefined);
       await handle.close();
       await admin.query(`DROP DATABASE IF EXISTS ${dbName} WITH (FORCE)`);
       await admin.end();

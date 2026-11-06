@@ -14,6 +14,7 @@ export interface DbHandle {
 
 export function createDb(connectionString: string): DbHandle {
   const pool = new pg.Pool({ connectionString, max: 10 });
+  pool.on("error", () => undefined);
   const db = drizzle(pool, { schema });
   return { db, pool, close: () => pool.end() };
 }

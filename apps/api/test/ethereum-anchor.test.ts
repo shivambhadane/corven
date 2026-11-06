@@ -41,11 +41,12 @@ const mine = (n: number) => raw("anvil_mine", [`0x${n.toString(16)}`]);
 let owner: ReturnType<typeof privateKeyToAccount>;
 let signerKey: Hex;
 let contract: Hex;
+let pub: ReturnType<typeof createPublicClient>;
 
 async function deploy(): Promise<Hex> {
   const art = JSON.parse(readFileSync(ARTIFACT, "utf8")) as { abi: never; bytecode: { object: Hex } };
   const wallet = createWalletClient({ chain: { ...chain, rpcUrls: { default: { http: [rpc] } } }, transport: http(rpc), account: owner });
-  const pub = createPublicClient({ chain, transport: http(rpc) });
+  pub = createPublicClient({ chain, transport: http(rpc) });
   const hash = await wallet.deployContract({ abi: art.abi, bytecode: art.bytecode.object, args: [owner.address, privateKeyToAccount(signerKey).address] });
   const rc = await pub.waitForTransactionReceipt({ hash });
   return rc.contractAddress!;
@@ -145,6 +146,7 @@ describe.skipIf(!runnable)("against a real EVM (local Anvil)", () => {
   it("is idempotent: a repeated submit returns the original transaction and sends nothing", async () => {
     const c = mk();
     const first = await c.submit(hashA.replace("ab", "ac"), ref(20));
+    await pub.waitForTransactionReceipt({ hash: first.txHash as Hex });
     const before = BigInt((await raw("eth_blockNumber")) as string);
     const again = await c.submit(hashA.replace("ab", "ac"), ref(20));
     expect(again.txHash).toBe(first.txHash);
